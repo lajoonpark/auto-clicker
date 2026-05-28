@@ -2,7 +2,6 @@
 import AppKit
 import CoreGraphics
 
-@MainActor
 public final class InputRecorder {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -13,9 +12,7 @@ public final class InputRecorder {
     public init() {}
 
     deinit {
-        MainActor.assumeIsolated {
-            stop()
-        }
+        stop()
     }
 
     public func start(handler: @escaping (MacroAction) -> Void) {

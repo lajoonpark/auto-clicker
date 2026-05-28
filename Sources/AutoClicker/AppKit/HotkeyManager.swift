@@ -7,7 +7,6 @@ public enum HotkeyEventPhase {
     case keyUp
 }
 
-@MainActor
 public final class HotkeyManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -17,9 +16,7 @@ public final class HotkeyManager {
     public init() {}
 
     deinit {
-        MainActor.assumeIsolated {
-            stop()
-        }
+        stop()
     }
 
     public func start(shortcuts: [AutomationFeature: HotkeyShortcut], handler: @escaping (AutomationFeature, HotkeyEventPhase) -> Void) {
