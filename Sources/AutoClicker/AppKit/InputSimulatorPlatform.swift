@@ -8,8 +8,9 @@ enum InputSimulatorPlatform {
     }
 
     static func click(_ button: MouseButton, at point: ScreenPoint) {
-        guard let down = CGEvent(mouseEventSource: nil, mouseType: mouseDownType(for: button), mouseCursorPosition: cgPoint(for: point), mouseButton: cgButton(for: button)),
-              let up = CGEvent(mouseEventSource: nil, mouseType: mouseUpType(for: button), mouseCursorPosition: cgPoint(for: point), mouseButton: cgButton(for: button)) else {
+        let source = eventSource()
+        guard let down = CGEvent(mouseEventSource: source, mouseType: mouseDownType(for: button), mouseCursorPosition: cgPoint(for: point), mouseButton: cgButton(for: button)),
+              let up = CGEvent(mouseEventSource: source, mouseType: mouseUpType(for: button), mouseCursorPosition: cgPoint(for: point), mouseButton: cgButton(for: button)) else {
             return
         }
         down.post(tap: .cghidEventTap)
@@ -18,7 +19,7 @@ enum InputSimulatorPlatform {
 
     static func holdMouse(_ button: MouseButton) {
         let point = currentMouseLocation()
-        guard let event = CGEvent(mouseEventSource: nil, mouseType: mouseDownType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
+        guard let event = CGEvent(mouseEventSource: eventSource(), mouseType: mouseDownType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
             return
         }
         event.post(tap: .cghidEventTap)
@@ -26,7 +27,7 @@ enum InputSimulatorPlatform {
 
     static func releaseMouse(_ button: MouseButton) {
         let point = currentMouseLocation()
-        guard let event = CGEvent(mouseEventSource: nil, mouseType: mouseUpType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
+        guard let event = CGEvent(mouseEventSource: eventSource(), mouseType: mouseUpType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
             return
         }
         event.post(tap: .cghidEventTap)
@@ -34,13 +35,13 @@ enum InputSimulatorPlatform {
 
     static func holdKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {
         holdModifiers(modifiers)
-        guard let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: true) else { return }
+        guard let event = CGEvent(keyboardEventSource: eventSource(), virtualKey: CGKeyCode(keyCode), keyDown: true) else { return }
         event.flags = flags(for: modifiers)
         event.post(tap: .cghidEventTap)
     }
 
     static func releaseKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {
-        guard let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: false) else { return }
+        guard let event = CGEvent(keyboardEventSource: eventSource(), virtualKey: CGKeyCode(keyCode), keyDown: false) else { return }
         event.flags = flags(for: modifiers)
         event.post(tap: .cghidEventTap)
         releaseModifiers(modifiers)
@@ -49,7 +50,7 @@ enum InputSimulatorPlatform {
     static func holdCombo(_ combo: KeyCombo) {
         holdModifiers(combo.modifiers)
         for keyCode in combo.keyCodes {
-            guard let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: true) else { continue }
+            guard let event = CGEvent(keyboardEventSource: eventSource(), virtualKey: CGKeyCode(keyCode), keyDown: true) else { continue }
             event.flags = flags(for: combo.modifiers)
             event.post(tap: .cghidEventTap)
         }
@@ -57,7 +58,7 @@ enum InputSimulatorPlatform {
 
     static func releaseCombo(_ combo: KeyCombo) {
         for keyCode in combo.keyCodes.reversed() {
-            guard let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: false) else { continue }
+            guard let event = CGEvent(keyboardEventSource: eventSource(), virtualKey: CGKeyCode(keyCode), keyDown: false) else { continue }
             event.flags = flags(for: combo.modifiers)
             event.post(tap: .cghidEventTap)
         }
@@ -88,9 +89,15 @@ enum InputSimulatorPlatform {
     }
 
     private static func postModifier(_ modifier: ModifierKey, keyDown: Bool, activeModifiers: [ModifierKey]) {
-        guard let event = CGEvent(keyboardEventSource: nil, virtualKey: modifierKeyCode(for: modifier), keyDown: keyDown) else { return }
+        guard let event = CGEvent(keyboardEventSource: eventSource(), virtualKey: modifierKeyCode(for: modifier), keyDown: keyDown) else { return }
         event.flags = flags(for: activeModifiers)
         event.post(tap: .cghidEventTap)
+    }
+
+    private static func eventSource() -> CGEventSource? {
+        let source = CGEventSource(stateID: .hidSystemState)
+        source?.localEventsSuppressionInterval = 0
+        return source
     }
 
     private static func modifierKeyCode(for modifier: ModifierKey) -> CGKeyCode {
