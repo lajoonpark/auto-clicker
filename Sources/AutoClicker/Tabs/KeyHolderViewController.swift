@@ -111,7 +111,11 @@ final class KeyHolderViewController: NSViewController {
         case .toggle:
             onToggleRequested?(currentTarget())
         case .whilePressed:
-            onStartRequested?(currentTarget())
+            if startButton.title == "Release" {
+                onStopRequested?()
+            } else {
+                onStartRequested?(currentTarget())
+            }
         }
     }
 }

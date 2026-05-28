@@ -32,8 +32,12 @@ final class AppCoordinator {
 
     func makeWindowController() -> MainWindowController {
         autoClickerViewController.setHotkey(settings.autoClickerHotkey)
+        autoClickerViewController.setRunning(false)
         keyHolderViewController.setHotkey(settings.keyHolderHotkey)
+        keyHolderViewController.setHolding(false)
         macroViewController.setHotkey(settings.macroHotkey)
+        macroViewController.setPlaying(false)
+        macroViewController.setRecording(false)
         macroViewController.mouseLocationProvider = { [weak self] in self?.simulator.currentPointerLocation() ?? .zero }
         macroViewController.setMacros(macros)
         macroViewController.setDocument(currentMacro)
@@ -139,7 +143,7 @@ final class AppCoordinator {
             }
         case .macro:
             guard phase == .keyDown else { return }
-            macroRunner.toggle(document: currentMacro, loopMode: .untilStopped, speedMultiplier: 1)
+            macroRunner.toggle(document: currentMacro, loopMode: macroViewController.playbackLoopMode, speedMultiplier: macroViewController.playbackSpeedMultiplier)
         }
     }
 
@@ -169,7 +173,10 @@ final class AppCoordinator {
 
     private func setRecording(_ shouldRecord: Bool) {
         if shouldRecord {
-            guard AccessibilityPermissionManager.isTrusted(prompt: true) else { return }
+            guard AccessibilityPermissionManager.isTrusted(prompt: true) else {
+                macroViewController.setRecording(false)
+                return
+            }
             inputRecorder.start { [weak self] action in
                 guard let self else { return }
                 self.currentMacro.actions.append(action)

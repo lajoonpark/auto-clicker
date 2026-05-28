@@ -98,6 +98,14 @@ final class MacroViewController: NSViewController {
         playButton.title = playing ? "Stop" : "Play"
     }
 
+    var playbackLoopMode: MacroLoopMode {
+        currentLoopMode()
+    }
+
+    var playbackSpeedMultiplier: Double {
+        currentSpeed()
+    }
+
     private func buildLayout() {
         let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = true

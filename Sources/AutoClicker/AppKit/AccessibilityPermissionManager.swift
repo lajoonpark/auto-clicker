@@ -19,10 +19,17 @@ public enum AccessibilityPermissionManager {
         alert.informativeText = "AutoClicker needs Accessibility permission to simulate clicks, hold keys, and listen for global shortcuts."
         alert.addButton(withTitle: "Open Settings")
         alert.addButton(withTitle: "Later")
-        let response = window == nil ? alert.runModal() : alert.beginSheetModal(for: window!) { response in
-            if response == .alertFirstButtonReturn { openSystemSettings() }
+        guard let window else {
+            if alert.runModal() == .alertFirstButtonReturn {
+                openSystemSettings()
+            }
+            return
         }
-        if response == .alertFirstButtonReturn { openSystemSettings() }
+        alert.beginSheetModal(for: window) { response in
+            if response == .alertFirstButtonReturn {
+                openSystemSettings()
+            }
+        }
     }
 
     public static func openSystemSettings() {
