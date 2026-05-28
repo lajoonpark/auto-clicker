@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "AutoClicker",
+    platforms: [.macOS(.v13)],
     products: [
         .library(name: "AutoClicker", targets: ["AutoClicker"]),
         .executable(name: "AutoClickerApp", targets: ["AutoClickerApp"]),
