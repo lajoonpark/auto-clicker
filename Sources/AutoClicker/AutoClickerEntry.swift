@@ -1,4 +1,5 @@
 public enum AutoClickerEntry {
+    @MainActor
     public static func run() {
         #if canImport(AppKit)
         AppBootstrap.run()

@@ -17,7 +17,9 @@ public final class HotkeyManager {
     public init() {}
 
     deinit {
-        stop()
+        MainActor.assumeIsolated {
+            stop()
+        }
     }
 
     public func start(shortcuts: [AutomationFeature: HotkeyShortcut], handler: @escaping (AutomationFeature, HotkeyEventPhase) -> Void) {

@@ -13,7 +13,9 @@ public final class InputRecorder {
     public init() {}
 
     deinit {
-        stop()
+        MainActor.assumeIsolated {
+            stop()
+        }
     }
 
     public func start(handler: @escaping (MacroAction) -> Void) {
