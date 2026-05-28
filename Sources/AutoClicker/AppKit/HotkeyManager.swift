@@ -7,7 +7,6 @@ public enum HotkeyEventPhase {
     case keyUp
 }
 
-@MainActor
 public final class HotkeyManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?

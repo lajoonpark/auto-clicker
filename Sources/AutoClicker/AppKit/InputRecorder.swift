@@ -2,7 +2,6 @@
 import AppKit
 import CoreGraphics
 
-@MainActor
 public final class InputRecorder {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
