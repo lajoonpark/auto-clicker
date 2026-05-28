@@ -1,12 +1,12 @@
 #if canImport(AppKit)
 import AppKit
-import ApplicationServices
+@preconcurrency import ApplicationServices
 
 @MainActor
 public enum AccessibilityPermissionManager {
     public static func isTrusted(prompt: Bool = false) -> Bool {
         if prompt {
-            let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
             return AXIsProcessTrustedWithOptions(options)
         }
         return AXIsProcessTrusted()
