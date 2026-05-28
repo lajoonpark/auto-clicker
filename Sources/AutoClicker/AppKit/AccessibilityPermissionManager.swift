@@ -6,7 +6,7 @@ import ApplicationServices
 public enum AccessibilityPermissionManager {
     public static func isTrusted(prompt: Bool = false) -> Bool {
         if prompt {
-            let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
+            let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
             return AXIsProcessTrustedWithOptions(options)
         }
         return AXIsProcessTrusted()
