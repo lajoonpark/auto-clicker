@@ -1,0 +1,3 @@
+import AutoClicker
+
+AutoClickerEntry.run()
