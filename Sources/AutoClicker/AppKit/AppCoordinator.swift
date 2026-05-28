@@ -43,7 +43,7 @@ final class AppCoordinator {
         macroViewController.setDocument(currentMacro)
         let main = MainViewController(
             childControllers: [autoClickerViewController, keyHolderViewController, macroViewController],
-            titles: AutomationFeature.allCases.map(\ .title)
+            titles: AutomationFeature.allCases.map(\.title)
         )
         return MainWindowController(contentViewController: main)
     }

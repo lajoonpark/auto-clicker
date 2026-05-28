@@ -19,7 +19,9 @@ public final class ModernButton: NSButton {
     public override func draw(_ dirtyRect: NSRect) {
         let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
         let background = isProminent ? NSColor.controlAccentColor : NSColor.controlBackgroundColor
-        let stroke = isProminent ? NSColor.controlAccentColor : NSColor.separatorColor
+        let stroke = isProminent
+            ? NSColor.controlAccentColor.shadow(withLevel: 0.25) ?? NSColor.separatorColor
+            : NSColor.separatorColor
         background.setFill()
         let path = NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10)
         path.fill()

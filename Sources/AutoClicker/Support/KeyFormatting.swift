@@ -19,12 +19,12 @@ public enum KeyFormatter {
     }
 
     public static func label(for shortcut: HotkeyShortcut) -> String {
-        let modifiers = shortcut.modifiers.map(\ .symbol).joined()
+        let modifiers = shortcut.modifiers.map(\.symbol).joined()
         return modifiers + label(for: shortcut.keyCode)
     }
 
     public static func label(for combo: KeyCombo) -> String {
-        let modifiers = combo.modifiers.map(\ .symbol).joined()
+        let modifiers = combo.modifiers.map(\.symbol).joined()
         let keys = combo.keyCodes.map(label(for:)).joined(separator: " + ")
         return modifiers + (modifiers.isEmpty || keys.isEmpty ? keys : " + \(keys)")
     }

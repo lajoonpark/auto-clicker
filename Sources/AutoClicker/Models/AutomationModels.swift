@@ -43,7 +43,8 @@ public struct KeyCombo: Codable, Equatable, Hashable, Sendable {
     public var modifiers: [ModifierKey]
 
     public init(keyCodes: [UInt16], modifiers: [ModifierKey]) {
-        self.keyCodes = Array(NSOrderedSet(array: keyCodes)) as? [UInt16] ?? keyCodes
+        var seen = Set<UInt16>()
+        self.keyCodes = keyCodes.filter { seen.insert($0).inserted }
         self.modifiers = modifiers.sorted { $0.rawValue < $1.rawValue }
     }
 }

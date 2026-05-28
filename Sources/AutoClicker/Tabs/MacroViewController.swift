@@ -80,7 +80,7 @@ final class MacroViewController: NSViewController {
     func setMacros(_ macros: [MacroDocument]) {
         savedMacros = macros
         macroPicker.removeAllItems()
-        macroPicker.addItems(withTitles: macros.map(\ .name))
+        macroPicker.addItems(withTitles: macros.map(\.name))
         refreshPickerSelection()
     }
 

@@ -104,7 +104,7 @@ public final class InputRecorder {
     }
 
     private func isModifierOnly(_ keyCode: UInt16) -> Bool {
-        [54, 55, 56, 58, 59, 60, 61, 62].contains(Int(keyCode))
+        InputConstants.modifierKeyCodes.contains(keyCode)
     }
 }
 #endif

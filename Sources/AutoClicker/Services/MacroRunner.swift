@@ -13,7 +13,7 @@ public final class MacroRunner: @unchecked Sendable {
 
     public func start(document: MacroDocument, loopMode: MacroLoopMode, speedMultiplier: Double) {
         stop()
-        let multiplier = max(speedMultiplier, 0.1)
+        let multiplier = max(speedMultiplier, InputConstants.minimumPlaybackSpeedMultiplier)
         task = Task { [weak self] in
             guard let self else { return }
             await MainActor.run { self.onStateChange?(true) }

@@ -100,7 +100,7 @@ public final class KeyCaptureField: NSTextField {
     private func updatePreview() {
         switch style {
         case .hotkey:
-            stringValue = capturedModifiers.isEmpty ? "Recording…" : capturedModifiers.map(\ .symbol).joined()
+            stringValue = capturedModifiers.isEmpty ? "Recording…" : capturedModifiers.map(\.symbol).joined()
         case .combo:
             let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
             let label = KeyFormatter.label(for: combo)
@@ -135,7 +135,7 @@ public final class KeyCaptureField: NSTextField {
     }
 
     private func isModifier(_ keyCode: UInt16) -> Bool {
-        [54, 55, 56, 58, 59, 60, 61, 62].contains(Int(keyCode))
+        InputConstants.modifierKeyCodes.contains(keyCode)
     }
 }
 #endif

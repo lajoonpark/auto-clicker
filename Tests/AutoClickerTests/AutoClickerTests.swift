@@ -52,7 +52,7 @@ private final class MockSimulator: InputSimulation, @unchecked Sendable {
     func pressKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {}
     func holdKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {}
     func releaseKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {}
-    func pressCombo(_ combo: KeyCombo) { events.append("combo:\(combo.modifiers.map(\ .rawValue).joined(separator: "+")):\(combo.keyCodes.map(KeyFormatter.label(for:)).joined(separator: "+"))") }
+    func pressCombo(_ combo: KeyCombo) { events.append("combo:\(combo.modifiers.map(\.rawValue).joined(separator: "+")):\(combo.keyCodes.map(KeyFormatter.label(for:)).joined(separator: "+"))") }
     func holdCombo(_ combo: KeyCombo) {}
     func releaseCombo(_ combo: KeyCombo) {}
 }

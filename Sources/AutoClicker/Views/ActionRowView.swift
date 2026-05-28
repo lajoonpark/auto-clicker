@@ -53,6 +53,7 @@ public final class ActionRowView: NSView {
         deleteButton.action = #selector(deleteRow)
         deleteButton.isBordered = false
         deleteButton.font = .systemFont(ofSize: 16, weight: .bold)
+        deleteButton.setAccessibilityLabel("Delete action")
         stack.addArrangedSubview(deleteButton)
 
         NSLayoutConstraint.activate([

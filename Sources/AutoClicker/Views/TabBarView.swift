@@ -2,6 +2,7 @@
 import AppKit
 
 public final class TabBarView: NSView {
+    private static let backgroundBlendFraction = 0.07
     public var onSelectionChanged: ((Int) -> Void)?
     private var buttons: [NSButton] = []
     private let stackView = NSStackView()
@@ -47,7 +48,9 @@ public final class TabBarView: NSView {
     private func configure() {
         wantsLayer = true
         layer?.cornerRadius = 14
-        layer?.backgroundColor = NSColor.windowBackgroundColor.blended(withFraction: 0.07, of: .labelColor)?.cgColor
+        layer?.backgroundColor = NSColor.windowBackgroundColor
+            .blended(withFraction: Self.backgroundBlendFraction, of: .labelColor)?
+            .cgColor
         stackView.orientation = .horizontal
         stackView.spacing = 8
         stackView.distribution = .fillEqually
