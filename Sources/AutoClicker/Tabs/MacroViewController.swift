@@ -112,18 +112,18 @@ final class MacroViewController: NSViewController {
         scrollView.drawsBackground = false
         actionStack.orientation = .vertical
         actionStack.spacing = 8
-        let clipView = NSView()
-        clipView.translatesAutoresizingMaskIntoConstraints = false
+        let documentView = FlippedContentView()
+        documentView.translatesAutoresizingMaskIntoConstraints = false
         actionStack.translatesAutoresizingMaskIntoConstraints = false
-        clipView.addSubview(actionStack)
+        documentView.addSubview(actionStack)
+        scrollView.documentView = documentView
         NSLayoutConstraint.activate([
-            actionStack.topAnchor.constraint(equalTo: clipView.topAnchor),
-            actionStack.leadingAnchor.constraint(equalTo: clipView.leadingAnchor),
-            actionStack.trailingAnchor.constraint(equalTo: clipView.trailingAnchor),
-            actionStack.bottomAnchor.constraint(equalTo: clipView.bottomAnchor),
-            actionStack.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+            documentView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
+            actionStack.topAnchor.constraint(equalTo: documentView.topAnchor),
+            actionStack.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
+            actionStack.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
+            actionStack.bottomAnchor.constraint(equalTo: documentView.bottomAnchor)
         ])
-        scrollView.documentView = clipView
         scrollView.heightAnchor.constraint(equalToConstant: 250).isActive = true
 
         let content = NSStackView()
@@ -319,5 +319,9 @@ final class MacroViewController: NSViewController {
     @objc private func togglePlayback() {
         onPlaybackToggle?(currentLoopMode(), currentSpeed())
     }
+}
+
+private final class FlippedContentView: NSView {
+    override var isFlipped: Bool { true }
 }
 #endif

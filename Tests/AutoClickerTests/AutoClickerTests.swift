@@ -42,6 +42,28 @@ import Testing
     ])
 }
 
+#if canImport(AppKit)
+import AppKit
+
+@MainActor
+@Test func macroViewControllerCreatesScrollableActionList() {
+    let controller = MacroViewController()
+
+    _ = controller.view
+
+    let scrollViews = controller.view.allDescendantViews().compactMap { $0 as? NSScrollView }
+    #expect(scrollViews.count == 1)
+    #expect(scrollViews[0].documentView != nil)
+    #expect(scrollViews[0].documentView?.isFlipped == true)
+}
+
+private extension NSView {
+    func allDescendantViews() -> [NSView] {
+        subviews + subviews.flatMap { $0.allDescendantViews() }
+    }
+}
+#endif
+
 private final class MockSimulator: InputSimulation, @unchecked Sendable {
     var events: [String] = []
 
