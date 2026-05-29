@@ -89,10 +89,14 @@ public final class KeyCaptureField: NSTextField {
                 window?.makeFirstResponder(nil)
                 return
             }
+            let didAddKey: Bool
             if !capturedKeys.contains(event.keyCode), capturedKeys.count < maximumKeys {
                 capturedKeys.append(event.keyCode)
+                didAddKey = true
+            } else {
+                didAddKey = false
             }
-            if !capturedKeys.isEmpty {
+            if didAddKey {
                 applyCapturedCombo()
             }
             updatePreview()

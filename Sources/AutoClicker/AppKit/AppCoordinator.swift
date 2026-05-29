@@ -50,7 +50,7 @@ final class AppCoordinator {
 
     func startHotkeysIfPossible() {
         guard AccessibilityPermissionManager.isTrusted() else {
-            hotkeyManager.stop()
+            stopHotkeys()
             return
         }
         hotkeyManager.start(shortcuts: [
@@ -197,11 +197,15 @@ final class AppCoordinator {
 
     private func checkAndPromptForAccessibilityPermission() -> Bool {
         guard AccessibilityPermissionManager.isTrusted() else {
-            startHotkeysIfPossible()
+            stopHotkeys()
             AccessibilityPermissionManager.promptIfNeeded(window: autoClickerViewController.view.window)
             return false
         }
         return true
+    }
+
+    private func stopHotkeys() {
+        hotkeyManager.stop()
     }
 }
 #endif
