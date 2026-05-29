@@ -14,6 +14,7 @@ public final class KeyCaptureField: NSTextField {
     private let style: CaptureStyle
     private var capturedKeys: [UInt16] = []
     private var capturedModifiers: [ModifierKey] = []
+    private var lastAppliedCombo: KeyCombo?
     private var placeholderText: String
 
     public init(style: CaptureStyle, placeholder: String) {
@@ -45,6 +46,7 @@ public final class KeyCaptureField: NSTextField {
         if accepted {
             capturedKeys = []
             capturedModifiers = []
+            lastAppliedCombo = nil
             stringValue = "Recording…"
             layer?.borderColor = NSColor.controlAccentColor.cgColor
         }
@@ -81,6 +83,9 @@ public final class KeyCaptureField: NSTextField {
             window?.makeFirstResponder(nil)
         case let .combo(maximumKeys):
             if event.keyCode == Self.returnKeyCode {
+                if !capturedKeys.isEmpty {
+                    applyCapturedCombo()
+                }
                 window?.makeFirstResponder(nil)
                 return
             }
@@ -113,7 +118,10 @@ public final class KeyCaptureField: NSTextField {
     private func applyCapturedCombo() {
         let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
         stringValue = KeyFormatter.label(for: combo)
-        onComboCaptured?(combo)
+        if combo != lastAppliedCombo {
+            onComboCaptured?(combo)
+            lastAppliedCombo = combo
+        }
     }
 
     private func commonInit() {
