@@ -197,6 +197,7 @@ final class AppCoordinator {
 
     private func checkAndPromptForAccessibilityPermission() -> Bool {
         guard AccessibilityPermissionManager.isTrusted() else {
+            hotkeyManager.stop()
             AccessibilityPermissionManager.promptIfNeeded(window: autoClickerViewController.view.window)
             return false
         }

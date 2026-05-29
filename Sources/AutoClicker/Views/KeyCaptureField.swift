@@ -79,9 +79,6 @@ public final class KeyCaptureField: NSTextField {
             window?.makeFirstResponder(nil)
         case let .combo(maximumKeys):
             if event.keyCode == 36 {
-                if !capturedKeys.isEmpty {
-                    applyCapturedCombo()
-                }
                 window?.makeFirstResponder(nil)
                 return
             }
