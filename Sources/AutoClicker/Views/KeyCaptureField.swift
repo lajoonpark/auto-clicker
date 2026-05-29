@@ -78,15 +78,22 @@ public final class KeyCaptureField: NSTextField {
             onHotkeyCaptured?(shortcut)
             window?.makeFirstResponder(nil)
         case let .combo(maximumKeys):
-            if event.keyCode == 36, !capturedKeys.isEmpty {
-                let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
-                stringValue = KeyFormatter.label(for: combo)
-                onComboCaptured?(combo)
+            if event.keyCode == 36 {
+                if !capturedKeys.isEmpty {
+                    let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
+                    stringValue = KeyFormatter.label(for: combo)
+                    onComboCaptured?(combo)
+                }
                 window?.makeFirstResponder(nil)
                 return
             }
             if !capturedKeys.contains(event.keyCode), capturedKeys.count < maximumKeys {
                 capturedKeys.append(event.keyCode)
+            }
+            if !capturedKeys.isEmpty {
+                let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
+                stringValue = KeyFormatter.label(for: combo)
+                onComboCaptured?(combo)
             }
             updatePreview()
         }
