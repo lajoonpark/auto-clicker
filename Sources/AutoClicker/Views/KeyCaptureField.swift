@@ -2,6 +2,8 @@
 import AppKit
 
 public final class KeyCaptureField: NSTextField {
+    private static let returnKeyCode: UInt16 = 36
+
     public enum CaptureStyle {
         case hotkey
         case combo(maximumKeys: Int)
@@ -78,7 +80,7 @@ public final class KeyCaptureField: NSTextField {
             onHotkeyCaptured?(shortcut)
             window?.makeFirstResponder(nil)
         case let .combo(maximumKeys):
-            if event.keyCode == 36 {
+            if event.keyCode == Self.returnKeyCode {
                 window?.makeFirstResponder(nil)
                 return
             }
