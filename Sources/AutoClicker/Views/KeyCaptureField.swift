@@ -80,9 +80,7 @@ public final class KeyCaptureField: NSTextField {
         case let .combo(maximumKeys):
             if event.keyCode == 36 {
                 if !capturedKeys.isEmpty {
-                    let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
-                    stringValue = KeyFormatter.label(for: combo)
-                    onComboCaptured?(combo)
+                    applyCapturedCombo()
                 }
                 window?.makeFirstResponder(nil)
                 return
@@ -91,9 +89,7 @@ public final class KeyCaptureField: NSTextField {
                 capturedKeys.append(event.keyCode)
             }
             if !capturedKeys.isEmpty {
-                let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
-                stringValue = KeyFormatter.label(for: combo)
-                onComboCaptured?(combo)
+                applyCapturedCombo()
             }
             updatePreview()
         }
@@ -113,6 +109,12 @@ public final class KeyCaptureField: NSTextField {
             let label = KeyFormatter.label(for: combo)
             stringValue = label.isEmpty ? "Recording…" : label
         }
+    }
+
+    private func applyCapturedCombo() {
+        let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
+        stringValue = KeyFormatter.label(for: combo)
+        onComboCaptured?(combo)
     }
 
     private func commonInit() {
