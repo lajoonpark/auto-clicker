@@ -9,7 +9,7 @@ final class KeyHolderViewController: NSViewController {
     var onHotkeyChanged: ((HotkeyShortcut) -> Void)?
 
     private let targetSelector = NSSegmentedControl(labels: ["Keyboard Combo", "Left Mouse", "Right Mouse"], trackingMode: .selectOne, target: nil, action: nil)
-    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 4), placeholder: "Click, press keys, then Return")
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 4), placeholder: "Click, then press keys")
     private let modeSelector = NSSegmentedControl(labels: ["Toggle", "While Pressed"], trackingMode: .selectOne, target: nil, action: nil)
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
     private let startButton = ModernButton(title: "Start Holding", target: nil, action: nil)

@@ -2,6 +2,8 @@
 import AppKit
 
 public final class KeyCaptureField: NSTextField {
+    private static let returnKeyCode: UInt16 = 36
+
     public enum CaptureStyle {
         case hotkey
         case combo(maximumKeys: Int)
@@ -12,6 +14,7 @@ public final class KeyCaptureField: NSTextField {
     private let style: CaptureStyle
     private var capturedKeys: [UInt16] = []
     private var capturedModifiers: [ModifierKey] = []
+    private var lastAppliedCombo: KeyCombo?
     private var placeholderText: String
 
     public init(style: CaptureStyle, placeholder: String) {
@@ -43,6 +46,7 @@ public final class KeyCaptureField: NSTextField {
         if accepted {
             capturedKeys = []
             capturedModifiers = []
+            lastAppliedCombo = nil
             stringValue = "Recording…"
             layer?.borderColor = NSColor.controlAccentColor.cgColor
         }
@@ -78,15 +82,22 @@ public final class KeyCaptureField: NSTextField {
             onHotkeyCaptured?(shortcut)
             window?.makeFirstResponder(nil)
         case let .combo(maximumKeys):
-            if event.keyCode == 36, !capturedKeys.isEmpty {
-                let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
-                stringValue = KeyFormatter.label(for: combo)
-                onComboCaptured?(combo)
+            if event.keyCode == Self.returnKeyCode {
+                if !capturedKeys.isEmpty {
+                    applyCapturedCombo()
+                }
                 window?.makeFirstResponder(nil)
                 return
             }
+            let didAddKey: Bool
             if !capturedKeys.contains(event.keyCode), capturedKeys.count < maximumKeys {
                 capturedKeys.append(event.keyCode)
+                didAddKey = true
+            } else {
+                didAddKey = false
+            }
+            if didAddKey {
+                applyCapturedCombo()
             }
             updatePreview()
         }
@@ -105,6 +116,15 @@ public final class KeyCaptureField: NSTextField {
             let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
             let label = KeyFormatter.label(for: combo)
             stringValue = label.isEmpty ? "Recording…" : label
+        }
+    }
+
+    private func applyCapturedCombo() {
+        let combo = KeyCombo(keyCodes: capturedKeys, modifiers: capturedModifiers)
+        stringValue = KeyFormatter.label(for: combo)
+        if combo != lastAppliedCombo {
+            onComboCaptured?(combo)
+            lastAppliedCombo = combo
         }
     }
 

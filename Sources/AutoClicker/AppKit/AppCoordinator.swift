@@ -49,7 +49,10 @@ final class AppCoordinator {
     }
 
     func startHotkeysIfPossible() {
-        guard AccessibilityPermissionManager.isTrusted() else { return }
+        guard AccessibilityPermissionManager.isTrusted() else {
+            stopHotkeys()
+            return
+        }
         hotkeyManager.start(shortcuts: [
             .autoClicker: settings.autoClickerHotkey,
             .keyHolder: settings.keyHolderHotkey,
@@ -61,6 +64,7 @@ final class AppCoordinator {
 
     private func wireControllers() {
         autoClickerViewController.onToggleRequested = { [weak self] config in
+            guard self?.checkAndPromptForAccessibilityPermission() == true else { return }
             self?.autoClickerController.toggle(configuration: config)
         }
         autoClickerViewController.onHotkeyChanged = { [weak self] shortcut in
@@ -71,9 +75,11 @@ final class AppCoordinator {
         }
 
         keyHolderViewController.onToggleRequested = { [weak self] target in
+            guard self?.checkAndPromptForAccessibilityPermission() == true else { return }
             self?.keyHolderController.toggle(target: target)
         }
         keyHolderViewController.onStartRequested = { [weak self] target in
+            guard self?.checkAndPromptForAccessibilityPermission() == true else { return }
             self?.keyHolderController.start(target: target)
         }
         keyHolderViewController.onStopRequested = { [weak self] in
@@ -99,6 +105,7 @@ final class AppCoordinator {
             self?.selectMacro(id: id)
         }
         macroViewController.onPlaybackToggle = { [weak self] loopMode, speed in
+            guard self?.checkAndPromptForAccessibilityPermission() == true else { return }
             self?.macroRunner.toggle(document: self?.currentMacro ?? MacroDocument(name: "Untitled Macro"), loopMode: loopMode, speedMultiplier: speed)
         }
         macroViewController.onRecordingToggle = { [weak self] shouldRecord in
@@ -173,7 +180,7 @@ final class AppCoordinator {
 
     private func setRecording(_ shouldRecord: Bool) {
         if shouldRecord {
-            guard AccessibilityPermissionManager.isTrusted(prompt: true) else {
+            guard checkAndPromptForAccessibilityPermission() else {
                 macroViewController.setRecording(false)
                 return
             }
@@ -186,6 +193,19 @@ final class AppCoordinator {
             inputRecorder.stop()
         }
         macroViewController.setRecording(shouldRecord)
+    }
+
+    private func checkAndPromptForAccessibilityPermission() -> Bool {
+        guard AccessibilityPermissionManager.isTrusted() else {
+            stopHotkeys()
+            AccessibilityPermissionManager.promptIfNeeded(window: autoClickerViewController.view.window)
+            return false
+        }
+        return true
+    }
+
+    private func stopHotkeys() {
+        hotkeyManager.stop()
     }
 }
 #endif
