@@ -3,8 +3,8 @@ import AppKit
 import CoreGraphics
 
 enum InputSimulatorPlatform {
-    // Keep a short 30ms pause so targets reliably observe a full mouse-down/mouse-up click sequence.
-    private static let clickUpDelayMilliseconds: useconds_t = 30
+    // Short 30ms pause so targets reliably observe a full mouse-down/mouse-up click sequence.
+    private static let clickUpDelayMicroseconds: useconds_t = 30_000
 
     static func currentMouseLocation() -> CGPoint {
         guard let location = currentCGMouseLocation() else {
@@ -143,7 +143,7 @@ enum InputSimulatorPlatform {
         mouseDown.setIntegerValueField(.mouseEventClickState, value: 1)
         mouseUp.setIntegerValueField(.mouseEventClickState, value: 1)
         mouseDown.post(tap: .cghidEventTap)
-        usleep(clickUpDelayMilliseconds * 1_000)
+        usleep(clickUpDelayMicroseconds)
         mouseUp.post(tap: .cghidEventTap)
     }
 
