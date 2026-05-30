@@ -219,7 +219,7 @@ public final class InputRecorder {
                 self.latestModifierFlags = self.cgFlags(from: event.modifierFlags)
                 return event
             case .keyDown:
-                let keyCode = event.keyCode
+                let keyCode = UInt16(event.keyCode)
                 guard !self.isModifierOnly(keyCode) else { return event }
                 let modifiers = self.modifiers(from: self.latestModifierFlags.union(self.cgFlags(from: event.modifierFlags)))
                 let capture = self.singleCaptureHandler
