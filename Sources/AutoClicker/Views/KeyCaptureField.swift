@@ -42,13 +42,14 @@ public final class KeyCaptureField: NSTextField {
     public override func becomeFirstResponder() -> Bool {
         let accepted = super.becomeFirstResponder()
         if accepted {
-            capturedKeys = []
-            capturedModifiers = []
-            lastAppliedCombo = nil
-            stringValue = "Recording…"
-            layer?.borderColor = NSColor.controlAccentColor.cgColor
+            beginCapture()
         }
         return accepted
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        _ = window?.makeFirstResponder(self)
+        beginCapture()
     }
 
     public override func resignFirstResponder() -> Bool {
@@ -82,16 +83,10 @@ public final class KeyCaptureField: NSTextField {
             onHotkeyCaptured?(shortcut)
             window?.makeFirstResponder(nil)
         case let .combo(maximumKeys):
-            let didAddKey: Bool
             if !capturedKeys.contains(event.keyCode), capturedKeys.count < maximumKeys {
                 capturedKeys.append(event.keyCode)
-                didAddKey = true
-            } else {
-                didAddKey = false
             }
-            if didAddKey {
-                applyCapturedCombo()
-            }
+            applyCapturedCombo()
             updatePreview()
         }
     }
@@ -121,6 +116,14 @@ public final class KeyCaptureField: NSTextField {
         }
     }
 
+    private func beginCapture() {
+        capturedKeys = []
+        capturedModifiers = []
+        lastAppliedCombo = nil
+        stringValue = "Recording…"
+        layer?.borderColor = NSColor.controlAccentColor.cgColor
+    }
+
     private func commonInit() {
         isEditable = false
         isBordered = false
@@ -129,6 +132,7 @@ public final class KeyCaptureField: NSTextField {
         alignment = .center
         font = .monospacedSystemFont(ofSize: 12, weight: .medium)
         drawsBackground = true
+        isSelectable = true
         wantsLayer = true
         layer?.cornerRadius = 8
         layer?.borderWidth = 1

@@ -10,8 +10,11 @@ final class AutoClickerViewController: NSViewController {
 
     private let targetSelector = NSSegmentedControl(labels: ["Left Click", "Right Click", "Keyboard Combo"], trackingMode: .selectOne, target: nil, action: nil)
     private let comboField = KeyCaptureField(style: .combo(maximumKeys: InputConstants.maximumComboKeys), placeholder: "Click to record key combo")
+    private let intervalModeSelector = NSSegmentedControl(labels: ["Fixed", "Random Range"], trackingMode: .selectOne, target: nil, action: nil)
     private let intervalSlider = NSSlider(value: Double(AutoClickerViewController.defaultIntervalMilliseconds), minValue: 10, maxValue: 10_000, target: nil, action: nil)
     private let intervalField = NSTextField(string: String(AutoClickerViewController.defaultIntervalMilliseconds))
+    private let randomMinField = NSTextField(string: "100")
+    private let randomMaxField = NSTextField(string: "250")
     private let repeatSelector = NSSegmentedControl(labels: ["Until Stopped", "Fixed Count"], trackingMode: .selectOne, target: nil, action: nil)
     private let repeatCountField = NSTextField(string: "100")
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
@@ -24,15 +27,22 @@ final class AutoClickerViewController: NSViewController {
         view.translatesAutoresizingMaskIntoConstraints = false
         targetSelector.selectedSegment = 0
         repeatSelector.selectedSegment = 0
+        intervalModeSelector.selectedSegment = 0
         repeatCountField.isEnabled = false
         targetSelector.target = self
         targetSelector.action = #selector(targetChanged)
         comboField.onComboCaptured = { [weak self] combo in self?.currentCombo = combo }
         comboField.setCombo(currentCombo)
+        intervalModeSelector.target = self
+        intervalModeSelector.action = #selector(intervalModeChanged)
         intervalSlider.target = self
         intervalSlider.action = #selector(sliderChanged)
         intervalField.target = self
         intervalField.action = #selector(intervalCommitted)
+        randomMinField.target = self
+        randomMinField.action = #selector(randomRangeCommitted)
+        randomMaxField.target = self
+        randomMaxField.action = #selector(randomRangeCommitted)
         repeatSelector.target = self
         repeatSelector.action = #selector(repeatModeChanged)
         hotkeyField.onHotkeyCaptured = { [weak self] shortcut in self?.onHotkeyChanged?(shortcut) }
@@ -42,6 +52,7 @@ final class AutoClickerViewController: NSViewController {
         statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
         layout()
+        intervalModeChanged()
         targetChanged()
     }
 
@@ -52,8 +63,7 @@ final class AutoClickerViewController: NSViewController {
     func setRunning(_ isRunning: Bool) {
         startButton.title = isRunning ? "Stop" : "Start"
         startButton.isProminent = !isRunning
-        let rate = Self.actionsPerSecond(interval: max(Int(intervalSlider.doubleValue), 10))
-        statusLabel.stringValue = isRunning ? String(format: "Running · %.1f actions/s", rate) : String(format: "Ready · %.1f actions/s", rate)
+        statusLabel.stringValue = Self.statusText(isRunning: isRunning, interval: currentIntervalSetting())
     }
 
     func currentConfiguration() -> AutoClickConfiguration {
@@ -66,9 +76,9 @@ final class AutoClickerViewController: NSViewController {
         default:
             target = .mouse(.left)
         }
-        let interval = max(Int(intervalField.integerValue), 10)
+        let interval = currentIntervalSetting()
         let mode: AutoClickRepeatMode = repeatSelector.selectedSegment == 0 ? .untilStopped : .count(max(repeatCountField.integerValue, 1))
-        return AutoClickConfiguration(target: target, intervalMilliseconds: interval, repeatMode: mode)
+        return AutoClickConfiguration(target: target, interval: interval, repeatMode: mode)
     }
 
     private func layout() {
@@ -111,9 +121,16 @@ final class AutoClickerViewController: NSViewController {
         let row = NSStackView(views: [intervalSlider, intervalField])
         row.orientation = .horizontal
         row.spacing = 10
+        let randomRow = NSStackView(views: [randomMinField, randomMaxField])
+        randomRow.orientation = .horizontal
+        randomRow.spacing = 10
         intervalField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        randomMinField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        randomMaxField.widthAnchor.constraint(equalToConstant: 80).isActive = true
         container.addArrangedSubview(label)
+        container.addArrangedSubview(intervalModeSelector)
         container.addArrangedSubview(row)
+        container.addArrangedSubview(randomRow)
         return wrap(container)
     }
 
@@ -171,8 +188,29 @@ final class AutoClickerViewController: NSViewController {
         setRunning(false)
     }
 
+    @objc private func randomRangeCommitted() {
+        let minValue = min(max(randomMinField.integerValue, 10), 10_000)
+        let maxValue = min(max(randomMaxField.integerValue, 10), 10_000)
+        randomMinField.stringValue = String(min(minValue, maxValue))
+        randomMaxField.stringValue = String(max(minValue, maxValue))
+        setRunning(false)
+    }
+
     @objc private func repeatModeChanged() {
         repeatCountField.isEnabled = repeatSelector.selectedSegment == 1
+    }
+
+    @objc private func intervalModeChanged() {
+        let isRandom = intervalModeSelector.selectedSegment == 1
+        intervalSlider.isEnabled = !isRandom
+        intervalField.isEnabled = !isRandom
+        intervalSlider.alphaValue = isRandom ? 0.45 : 1
+        intervalField.alphaValue = isRandom ? 0.45 : 1
+        randomMinField.isEnabled = isRandom
+        randomMaxField.isEnabled = isRandom
+        randomMinField.alphaValue = isRandom ? 1 : 0.45
+        randomMaxField.alphaValue = isRandom ? 1 : 0.45
+        setRunning(false)
     }
 
     @objc private func targetChanged() {
@@ -185,8 +223,30 @@ final class AutoClickerViewController: NSViewController {
         onToggleRequested?(currentConfiguration())
     }
 
+    private func currentIntervalSetting() -> AutoClickInterval {
+        if intervalModeSelector.selectedSegment == 1 {
+            let minimum = min(max(randomMinField.integerValue, 10), 10_000)
+            let maximum = min(max(randomMaxField.integerValue, 10), 10_000)
+            return .randomRange(minMilliseconds: min(minimum, maximum), maxMilliseconds: max(minimum, maximum))
+        }
+        return .fixed(milliseconds: max(Int(intervalField.integerValue), 10))
+    }
+
     private static func actionsPerSecond(interval: Int) -> Double {
         1000.0 / Double(interval)
+    }
+
+    private static func statusText(isRunning: Bool, interval: AutoClickInterval) -> String {
+        let prefix = isRunning ? "Running" : "Ready"
+        switch interval {
+        case let .fixed(milliseconds):
+            let rate = actionsPerSecond(interval: milliseconds)
+            return String(format: "\(prefix) · %.1f actions/s", rate)
+        case let .randomRange(minMilliseconds, maxMilliseconds):
+            let fast = actionsPerSecond(interval: max(min(minMilliseconds, maxMilliseconds), 10))
+            let slow = actionsPerSecond(interval: max(max(minMilliseconds, maxMilliseconds), 10))
+            return String(format: "\(prefix) · %.1f-%.1f actions/s", slow, fast)
+        }
     }
 }
 #endif

@@ -37,6 +37,8 @@ public enum KeyFormatter {
             return label(for: combo)
         case let .pause(milliseconds):
             return "Pause \(milliseconds) ms"
+        case let .randomPause(minMilliseconds, maxMilliseconds):
+            return "Pause \(minMilliseconds)-\(maxMilliseconds) ms"
         }
     }
 }

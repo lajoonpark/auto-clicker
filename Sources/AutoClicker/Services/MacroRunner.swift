@@ -62,6 +62,12 @@ public final class MacroRunner: @unchecked Sendable {
         case let .pause(milliseconds):
             let adjusted = max(Double(milliseconds) / multiplier, 1)
             try await Task.sleep(for: .milliseconds(Int(adjusted)))
+        case let .randomPause(minMilliseconds, maxMilliseconds):
+            let lower = max(min(minMilliseconds, maxMilliseconds), 0)
+            let upper = max(max(minMilliseconds, maxMilliseconds), 0)
+            let random = Int.random(in: lower ... upper)
+            let adjusted = max(Double(random) / multiplier, 1)
+            try await Task.sleep(for: .milliseconds(Int(adjusted)))
         }
     }
 }

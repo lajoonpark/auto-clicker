@@ -5,6 +5,7 @@ import CoreGraphics
 enum InputSimulatorPlatform {
     // Short 30ms (30,000 microseconds) pause so targets reliably observe a full mouse-down/mouse-up click sequence.
     private static let clickSequenceDelayMicroseconds: useconds_t = 30_000
+    private static let comboSequenceDelayMicroseconds: useconds_t = 5_000
 
     static func currentMouseLocation() -> CGPoint {
         guard let location = currentCGMouseLocation() else {
@@ -62,10 +63,12 @@ enum InputSimulatorPlatform {
 
     static func holdCombo(_ combo: KeyCombo) {
         holdModifiers(combo.modifiers)
+        usleep(comboSequenceDelayMicroseconds)
         for keyCode in combo.keyCodes {
             guard let event = CGEvent(keyboardEventSource: eventSource(), virtualKey: CGKeyCode(keyCode), keyDown: true) else { continue }
             event.flags = flags(for: combo.modifiers)
             event.post(tap: .cghidEventTap)
+            usleep(comboSequenceDelayMicroseconds)
         }
     }
 
@@ -74,6 +77,7 @@ enum InputSimulatorPlatform {
             guard let event = CGEvent(keyboardEventSource: eventSource(), virtualKey: CGKeyCode(keyCode), keyDown: false) else { continue }
             event.flags = flags(for: combo.modifiers)
             event.post(tap: .cghidEventTap)
+            usleep(comboSequenceDelayMicroseconds)
         }
         releaseModifiers(combo.modifiers)
     }
@@ -90,14 +94,19 @@ enum InputSimulatorPlatform {
     }
 
     private static func holdModifiers(_ modifiers: [ModifierKey]) {
+        var activeModifiers: [ModifierKey] = []
         for modifier in modifiers {
-            postModifier(modifier, keyDown: true, activeModifiers: modifiers)
+            activeModifiers.append(modifier)
+            postModifier(modifier, keyDown: true, activeModifiers: activeModifiers)
         }
     }
 
     private static func releaseModifiers(_ modifiers: [ModifierKey]) {
+        var activeModifiers = modifiers
         for modifier in modifiers.reversed() {
-            postModifier(modifier, keyDown: false, activeModifiers: modifiers)
+            activeModifiers.removeAll { $0 == modifier }
+            postModifier(modifier, keyDown: false, activeModifiers: activeModifiers)
+            usleep(comboSequenceDelayMicroseconds)
         }
     }
 

@@ -65,6 +65,7 @@ public enum MacroAction: Codable, Equatable, Sendable {
     case mouseClick(button: MouseButton, point: ScreenPoint)
     case keyCombo(KeyCombo)
     case pause(milliseconds: Int)
+    case randomPause(minMilliseconds: Int, maxMilliseconds: Int)
 
     private enum CodingKeys: String, CodingKey {
         case type
@@ -72,12 +73,15 @@ public enum MacroAction: Codable, Equatable, Sendable {
         case point
         case combo
         case milliseconds
+        case minMilliseconds
+        case maxMilliseconds
     }
 
     private enum ActionType: String, Codable {
         case mouseClick
         case keyCombo
         case pause
+        case randomPause
     }
 
     public init(from decoder: any Decoder) throws {
@@ -91,6 +95,11 @@ public enum MacroAction: Codable, Equatable, Sendable {
             self = .keyCombo(try container.decode(KeyCombo.self, forKey: .combo))
         case .pause:
             self = .pause(milliseconds: try container.decode(Int.self, forKey: .milliseconds))
+        case .randomPause:
+            self = .randomPause(
+                minMilliseconds: try container.decode(Int.self, forKey: .minMilliseconds),
+                maxMilliseconds: try container.decode(Int.self, forKey: .maxMilliseconds)
+            )
         }
     }
 
@@ -107,6 +116,10 @@ public enum MacroAction: Codable, Equatable, Sendable {
         case let .pause(milliseconds):
             try container.encode(ActionType.pause, forKey: .type)
             try container.encode(milliseconds, forKey: .milliseconds)
+        case let .randomPause(minMilliseconds, maxMilliseconds):
+            try container.encode(ActionType.randomPause, forKey: .type)
+            try container.encode(minMilliseconds, forKey: .minMilliseconds)
+            try container.encode(maxMilliseconds, forKey: .maxMilliseconds)
         }
     }
 }
@@ -222,14 +235,19 @@ public enum AutoClickRepeatMode: Equatable, Sendable {
     case count(Int)
 }
 
+public enum AutoClickInterval: Equatable, Sendable {
+    case fixed(milliseconds: Int)
+    case randomRange(minMilliseconds: Int, maxMilliseconds: Int)
+}
+
 public struct AutoClickConfiguration: Equatable, Sendable {
     public var target: RepeatTarget
-    public var intervalMilliseconds: Int
+    public var interval: AutoClickInterval
     public var repeatMode: AutoClickRepeatMode
 
-    public init(target: RepeatTarget, intervalMilliseconds: Int, repeatMode: AutoClickRepeatMode) {
+    public init(target: RepeatTarget, interval: AutoClickInterval, repeatMode: AutoClickRepeatMode) {
         self.target = target
-        self.intervalMilliseconds = intervalMilliseconds
+        self.interval = interval
         self.repeatMode = repeatMode
     }
 }
