@@ -44,9 +44,9 @@ public final class InputRecorder {
         singleCaptureCancelled = nil
         lastTimestamp = nil
 
-        let eventMask = (1 << CGEventType.keyDown.rawValue)
-            | (1 << CGEventType.leftMouseDown.rawValue)
-            | (1 << CGEventType.rightMouseDown.rawValue)
+        let eventMask = (UInt64(1) << CGEventType.keyDown.rawValue)
+            | (UInt64(1) << CGEventType.leftMouseDown.rawValue)
+            | (UInt64(1) << CGEventType.rightMouseDown.rawValue)
         installTap(eventMask: eventMask)
         isRecording = true
     }
