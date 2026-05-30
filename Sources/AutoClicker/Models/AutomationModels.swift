@@ -217,14 +217,19 @@ public enum AutoClickRepeatMode: Equatable, Sendable {
     case count(Int)
 }
 
+public enum AutoClickIntervalMode: Equatable, Sendable {
+    case fixed(Int)
+    case random(minMilliseconds: Int, maxMilliseconds: Int)
+}
+
 public struct AutoClickConfiguration: Equatable, Sendable {
     public var button: MouseButton
-    public var intervalMilliseconds: Int
+    public var intervalMode: AutoClickIntervalMode
     public var repeatMode: AutoClickRepeatMode
 
-    public init(button: MouseButton, intervalMilliseconds: Int, repeatMode: AutoClickRepeatMode) {
+    public init(button: MouseButton, intervalMode: AutoClickIntervalMode, repeatMode: AutoClickRepeatMode) {
         self.button = button
-        self.intervalMilliseconds = intervalMilliseconds
+        self.intervalMode = intervalMode
         self.repeatMode = repeatMode
     }
 }

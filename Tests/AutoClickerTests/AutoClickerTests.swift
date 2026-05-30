@@ -42,6 +42,21 @@ import Testing
     ])
 }
 
+@Test func autoClickerControllerSupportsRandomIntervalRange() async throws {
+    let simulator = CountingSimulator()
+    let controller = AutoClickerController(simulator: simulator)
+    controller.start(configuration: .init(
+        button: .left,
+        intervalMode: .random(minMilliseconds: 10, maxMilliseconds: 30),
+        repeatMode: .count(3)
+    ))
+
+    try await Task.sleep(for: .milliseconds(140))
+
+    #expect(simulator.clickCount == 3)
+    #expect(controller.isRunning == false)
+}
+
 #if canImport(AppKit)
 import AppKit
 
@@ -77,4 +92,32 @@ private final class MockSimulator: InputSimulation, @unchecked Sendable {
     func pressCombo(_ combo: KeyCombo) { events.append("combo:\(combo.modifiers.map(\.rawValue).joined(separator: "+")):\(combo.keyCodes.map(KeyFormatter.label(for:)).joined(separator: "+"))") }
     func holdCombo(_ combo: KeyCombo) {}
     func releaseCombo(_ combo: KeyCombo) {}
+}
+
+private final class CountingSimulator: InputSimulation, @unchecked Sendable {
+    private var count = 0
+    private let lock = NSLock()
+
+    var clickCount: Int {
+        lock.withLock { count }
+    }
+
+    func currentPointerLocation() -> ScreenPoint { .zero }
+    func click(_ button: MouseButton, at point: ScreenPoint) { lock.withLock { count += 1 } }
+    func holdDown(_ button: MouseButton) {}
+    func release(_ button: MouseButton) {}
+    func pressKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {}
+    func holdKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {}
+    func releaseKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {}
+    func pressCombo(_ combo: KeyCombo) {}
+    func holdCombo(_ combo: KeyCombo) {}
+    func releaseCombo(_ combo: KeyCombo) {}
+}
+
+private extension NSLock {
+    func withLock<T>(_ action: () -> T) -> T {
+        lock()
+        defer { unlock() }
+        return action()
+    }
 }
