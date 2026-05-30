@@ -42,6 +42,26 @@ import Testing
     ])
 }
 
+@Test func autoClickerUsesLiveMouseClickLocation() async throws {
+    let simulator = MockSimulator()
+    let controller = AutoClickerController(simulator: simulator)
+
+    controller.start(configuration: .init(target: .mouse(.left), intervalMilliseconds: 10, repeatMode: .count(1)))
+    try await Task.sleep(for: .milliseconds(40))
+
+    #expect(simulator.events == ["live-click:left"])
+}
+
+@Test func autoClickerCanRepeatKeyboardCombos() async throws {
+    let simulator = MockSimulator()
+    let controller = AutoClickerController(simulator: simulator)
+
+    controller.start(configuration: .init(target: .keyCombo(.init(keyCodes: [8], modifiers: [.command, .shift])), intervalMilliseconds: 10, repeatMode: .count(1)))
+    try await Task.sleep(for: .milliseconds(40))
+
+    #expect(simulator.events == ["combo:command+shift:C"])
+}
+
 #if canImport(AppKit)
 import AppKit
 
@@ -68,6 +88,7 @@ private final class MockSimulator: InputSimulation, @unchecked Sendable {
     var events: [String] = []
 
     func currentPointerLocation() -> ScreenPoint { .zero }
+    func click(_ button: MouseButton) { events.append("live-click:\(button.rawValue)") }
     func click(_ button: MouseButton, at point: ScreenPoint) { events.append("click:\(button.rawValue):\(point.x):\(point.y)") }
     func holdDown(_ button: MouseButton) {}
     func release(_ button: MouseButton) {}

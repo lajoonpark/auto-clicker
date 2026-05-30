@@ -2,6 +2,7 @@ import Foundation
 
 public protocol InputSimulation: Sendable {
     func currentPointerLocation() -> ScreenPoint
+    func click(_ button: MouseButton)
     func click(_ button: MouseButton, at point: ScreenPoint)
     func holdDown(_ button: MouseButton)
     func release(_ button: MouseButton)
@@ -22,6 +23,12 @@ public final class InputSimulator: InputSimulation, @unchecked Sendable {
         return ScreenPoint(x: point.x, y: point.y)
         #else
         return .zero
+        #endif
+    }
+
+    public func click(_ button: MouseButton) {
+        #if canImport(AppKit)
+        InputSimulatorPlatform.click(button)
         #endif
     }
 

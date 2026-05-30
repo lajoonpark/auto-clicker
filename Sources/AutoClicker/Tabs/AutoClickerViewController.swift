@@ -6,7 +6,8 @@ final class AutoClickerViewController: NSViewController {
     var onToggleRequested: ((AutoClickConfiguration) -> Void)?
     var onHotkeyChanged: ((HotkeyShortcut) -> Void)?
 
-    private let buttonSelector = NSSegmentedControl(labels: ["Left Click", "Right Click"], trackingMode: .selectOne, target: nil, action: nil)
+    private let targetSelector = NSSegmentedControl(labels: ["Left Click", "Right Click", "Keyboard Combo"], trackingMode: .selectOne, target: nil, action: nil)
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 8), placeholder: "Click and press any keys")
     private let intervalSlider = NSSlider(value: 100, minValue: 10, maxValue: 10_000, target: nil, action: nil)
     private let intervalField = NSTextField(string: "100")
     private let repeatSelector = NSSegmentedControl(labels: ["Until Stopped", "Fixed Count"], trackingMode: .selectOne, target: nil, action: nil)
@@ -14,13 +15,18 @@ final class AutoClickerViewController: NSViewController {
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
     private let startButton = ModernButton(title: "Start", target: nil, action: nil)
     private let statusLabel = NSTextField(labelWithString: "Ready · 10.0 CPS")
+    private var currentCombo = KeyCombo(keyCodes: [8], modifiers: [.command])
 
     override func loadView() {
         view = NSView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        buttonSelector.selectedSegment = 0
+        targetSelector.selectedSegment = 0
         repeatSelector.selectedSegment = 0
         repeatCountField.isEnabled = false
+        targetSelector.target = self
+        targetSelector.action = #selector(targetChanged)
+        comboField.onComboCaptured = { [weak self] combo in self?.currentCombo = combo }
+        comboField.setCombo(currentCombo)
         intervalSlider.target = self
         intervalSlider.action = #selector(sliderChanged)
         intervalField.target = self
@@ -34,6 +40,7 @@ final class AutoClickerViewController: NSViewController {
         statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
         layout()
+        targetChanged()
     }
 
     func setHotkey(_ hotkey: HotkeyShortcut) {
@@ -48,10 +55,18 @@ final class AutoClickerViewController: NSViewController {
     }
 
     func currentConfiguration() -> AutoClickConfiguration {
-        let button: MouseButton = buttonSelector.selectedSegment == 0 ? .left : .right
+        let target: RepeatTarget
+        switch targetSelector.selectedSegment {
+        case 1:
+            target = .mouse(.right)
+        case 2:
+            target = .keyCombo(currentCombo)
+        default:
+            target = .mouse(.left)
+        }
         let interval = max(Int(intervalField.integerValue), 10)
         let mode: AutoClickRepeatMode = repeatSelector.selectedSegment == 0 ? .untilStopped : .count(max(repeatCountField.integerValue, 1))
-        return AutoClickConfiguration(button: button, intervalMilliseconds: interval, repeatMode: mode)
+        return AutoClickConfiguration(target: target, intervalMilliseconds: interval, repeatMode: mode)
     }
 
     private func layout() {
@@ -62,7 +77,7 @@ final class AutoClickerViewController: NSViewController {
         view.addSubview(content)
 
         [
-            makeSection(title: "Click Button", contentView: buttonSelector),
+            makeTargetSection(),
             makeIntervalSection(),
             makeRepeatSection(),
             makeSection(title: "Start / Stop Hotkey", contentView: hotkeyField),
@@ -76,6 +91,13 @@ final class AutoClickerViewController: NSViewController {
             content.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
         ])
         startButton.heightAnchor.constraint(equalToConstant: 38).isActive = true
+    }
+
+    private func makeTargetSection() -> NSView {
+        let stack = NSStackView(views: [targetSelector, comboField])
+        stack.orientation = .vertical
+        stack.spacing = 8
+        return makeSection(title: "Repeated Action", contentView: stack)
     }
 
     private func makeIntervalSection() -> NSView {
@@ -149,6 +171,12 @@ final class AutoClickerViewController: NSViewController {
 
     @objc private func repeatModeChanged() {
         repeatCountField.isEnabled = repeatSelector.selectedSegment == 1
+    }
+
+    @objc private func targetChanged() {
+        let comboEnabled = targetSelector.selectedSegment == 2
+        comboField.isEnabled = comboEnabled
+        comboField.alphaValue = comboEnabled ? 1 : 0.45
     }
 
     @objc private func toggleRequested() {
