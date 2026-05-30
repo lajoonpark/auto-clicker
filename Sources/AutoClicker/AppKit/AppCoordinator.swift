@@ -53,6 +53,9 @@ final class AppCoordinator {
             stopHotkeys()
             return
         }
+        hotkeyManager.onEmergencyStop = { [weak self] in
+            self?.emergencyStop()
+        }
         hotkeyManager.start(shortcuts: [
             .autoClicker: settings.autoClickerHotkey,
             .keyHolder: settings.keyHolderHotkey,
@@ -258,6 +261,14 @@ final class AppCoordinator {
 
     private func stopHotkeys() {
         hotkeyManager.stop()
+    }
+
+    private func emergencyStop() {
+        autoClickerController.stop()
+        keyHolderController.stop()
+        macroRunner.stop()
+        inputRecorder.stop()
+        NSApp.terminate(nil)
     }
 }
 #endif

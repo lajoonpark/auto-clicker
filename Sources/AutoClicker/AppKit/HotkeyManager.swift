@@ -13,6 +13,10 @@ public final class HotkeyManager {
     private var shortcuts: [AutomationFeature: HotkeyShortcut] = [:]
     private var handler: ((AutomationFeature, HotkeyEventPhase) -> Void)?
 
+    // ⌃⌥⌘Q — emergency stop: halts all automation and quits the app
+    private static let emergencyShortcut = HotkeyShortcut(keyCode: 12, modifiers: [.control, .option, .command])
+    public var onEmergencyStop: (() -> Void)?
+
     public init() {}
 
     deinit {
@@ -75,6 +79,12 @@ public final class HotkeyManager {
         }
 
         let shortcut = HotkeyShortcut(keyCode: UInt16(event.getIntegerValueField(.keyboardEventKeycode)), modifiers: modifiers(from: event.flags))
+
+        if type == .keyDown && shortcut == HotkeyManager.emergencyShortcut {
+            onEmergencyStop?()
+            return nil
+        }
+
         guard let feature = shortcuts.first(where: { $0.value == shortcut })?.key else {
             return Unmanaged.passUnretained(event)
         }
