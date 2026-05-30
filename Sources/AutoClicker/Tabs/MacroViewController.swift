@@ -1,8 +1,14 @@
 #if canImport(AppKit)
 import AppKit
 
+enum MacroCaptureRequest {
+    case leftClick
+    case rightClick
+    case keyCombo
+}
+
 @MainActor
-final class MacroViewController: NSViewController {
+final class MacroViewController: NSViewController, NSTextFieldDelegate {
     private enum Layout {
         static let narrowFieldWidth: CGFloat = 88
         static let loopFieldWidth: CGFloat = 72
@@ -11,7 +17,10 @@ final class MacroViewController: NSViewController {
     var onDocumentChanged: ((MacroDocument) -> Void)?
     var onSaveRequested: (() -> Void)?
     var onNewRequested: (() -> Void)?
+    var onDeleteRequested: (() -> Void)?
     var onSelectionChanged: ((UUID) -> Void)?
+    var onCaptureRequested: ((MacroCaptureRequest) -> Void)?
+    var onCaptureCancelRequested: (() -> Void)?
     var onPlaybackToggle: ((MacroLoopMode, Double) -> Void)?
     var onRecordingToggle: ((Bool) -> Void)?
     var onHotkeyChanged: ((HotkeyShortcut) -> Void)?
@@ -21,13 +30,17 @@ final class MacroViewController: NSViewController {
     private let macroPicker = NSPopUpButton()
     private let newButton = ModernButton(title: "New Macro", target: nil, action: nil)
     private let saveButton = ModernButton(title: "Save Macro", target: nil, action: nil)
+    private let deleteButton = ModernButton(title: "Delete Macro", target: nil, action: nil)
     private let actionStack = NSStackView()
     private let addLeftClickButton = ModernButton(title: "+ Left Click", target: nil, action: nil)
     private let addRightClickButton = ModernButton(title: "+ Right Click", target: nil, action: nil)
     private let comboField = KeyCaptureField(style: .combo(maximumKeys: InputConstants.maximumComboKeys), placeholder: "Click to record key combo")
     private let addComboButton = ModernButton(title: "+ Add Keys", target: nil, action: nil)
     private let pauseField = NSTextField(string: "250")
+    private let pauseMaxField = NSTextField(string: "500")
+    private let pauseModeSelector = NSSegmentedControl(labels: ["Fixed", "Random Range"], trackingMode: .selectOne, target: nil, action: nil)
     private let addPauseButton = ModernButton(title: "+ Add Pause", target: nil, action: nil)
+    private let cancelCaptureButton = ModernButton(title: "Cancel Capture", target: nil, action: nil)
     private let loopField = NSTextField(string: "1")
     private let untilStoppedButton = NSButton(checkboxWithTitle: "Until stopped", target: nil, action: nil)
     private let speedSelector = NSPopUpButton()
@@ -40,28 +53,34 @@ final class MacroViewController: NSViewController {
     private var savedMacros: [MacroDocument] = []
     private var pendingCombo = InputConstants.defaultCombo
     private var isRecording = false
+    private var armedCaptureRequest: MacroCaptureRequest?
+    private let defaultStatusMessage = "Build and save macros independently."
 
     override func loadView() {
         view = NSView()
         comboField.onComboCaptured = { [weak self] combo in self?.pendingCombo = combo }
         comboField.setCombo(pendingCombo)
         hotkeyField.onHotkeyCaptured = { [weak self] shortcut in self?.onHotkeyChanged?(shortcut) }
-        nameField.target = self
-        nameField.action = #selector(nameChanged)
         macroPicker.target = self
         macroPicker.action = #selector(selectionChanged)
         newButton.target = self
         newButton.action = #selector(newMacro)
         saveButton.target = self
         saveButton.action = #selector(saveMacro)
+        deleteButton.target = self
+        deleteButton.action = #selector(deleteMacro)
         addLeftClickButton.target = self
         addLeftClickButton.action = #selector(addLeftClick)
         addRightClickButton.target = self
         addRightClickButton.action = #selector(addRightClick)
         addComboButton.target = self
         addComboButton.action = #selector(addCombo)
+        pauseModeSelector.target = self
+        pauseModeSelector.action = #selector(pauseModeChanged)
         addPauseButton.target = self
         addPauseButton.action = #selector(addPause)
+        cancelCaptureButton.target = self
+        cancelCaptureButton.action = #selector(cancelCapture)
         recordButton.target = self
         recordButton.action = #selector(toggleRecording)
         playButton.target = self
@@ -69,6 +88,7 @@ final class MacroViewController: NSViewController {
         recordButton.isProminent = false
         playButton.isProminent = true
         nameField.placeholderString = "Name this macro"
+        nameField.delegate = self
         nameField.font = .systemFont(ofSize: 15, weight: .semibold)
         nameField.isBordered = false
         nameField.backgroundColor = .textBackgroundColor
@@ -85,6 +105,10 @@ final class MacroViewController: NSViewController {
         pauseField.placeholderString = "ms"
         pauseField.alignment = .right
         pauseField.translatesAutoresizingMaskIntoConstraints = false
+        pauseMaxField.placeholderString = "max ms"
+        pauseMaxField.alignment = .right
+        pauseMaxField.translatesAutoresizingMaskIntoConstraints = false
+        pauseModeSelector.selectedSegment = 0
         loopField.placeholderString = "Loops"
         loopField.alignment = .right
         loopField.translatesAutoresizingMaskIntoConstraints = false
@@ -93,11 +117,14 @@ final class MacroViewController: NSViewController {
         statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.alignment = .center
+        statusLabel.stringValue = defaultStatusMessage
         InterfaceStyling.configureCell(for: statusLabel) { cell in
             cell.wraps = true
             cell.lineBreakMode = .byWordWrapping
         }
         buildLayout()
+        updatePauseFields()
+        updateCaptureUI()
     }
 
     func setDocument(_ document: MacroDocument) {
@@ -121,11 +148,28 @@ final class MacroViewController: NSViewController {
     func setRecording(_ recording: Bool) {
         isRecording = recording
         recordButton.title = recording ? "Stop Recording" : "Record"
-        statusLabel.stringValue = recording ? "Recording live input into the current macro…" : "Build and save macros independently."
+        if recording {
+            statusLabel.stringValue = "Recording live input into the current macro…"
+        } else if armedCaptureRequest == nil {
+            statusLabel.stringValue = defaultStatusMessage
+        }
     }
 
     func setPlaying(_ playing: Bool) {
         playButton.title = playing ? "Stop" : "Play"
+    }
+
+    func captureDidSucceed(_ action: MacroAction) {
+        appendAction(action)
+        armedCaptureRequest = nil
+        updateCaptureUI()
+        statusLabel.stringValue = "Captured \(KeyFormatter.label(for: action))."
+    }
+
+    func captureDidCancel(reason: String) {
+        armedCaptureRequest = nil
+        updateCaptureUI()
+        statusLabel.stringValue = reason
     }
 
     var playbackLoopMode: MacroLoopMode {
@@ -155,7 +199,7 @@ final class MacroViewController: NSViewController {
             actionStack.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
             actionStack.bottomAnchor.constraint(equalTo: documentView.bottomAnchor)
         ])
-        scrollView.heightAnchor.constraint(equalToConstant: 300).isActive = true
+        scrollView.heightAnchor.constraint(equalToConstant: 220).isActive = true
 
         let content = NSStackView()
         content.orientation = .vertical
@@ -182,7 +226,7 @@ final class MacroViewController: NSViewController {
     private func makeHeaderSection() -> NSView {
         let nameLabel = sectionMetaLabel("Macro Name")
         let savedLabel = sectionMetaLabel("Saved Macros")
-        let buttons = NSStackView(views: [newButton, saveButton])
+        let buttons = NSStackView(views: [newButton, saveButton, deleteButton])
         buttons.orientation = .horizontal
         buttons.spacing = 8
         buttons.setHuggingPriority(.required, for: .horizontal)
@@ -218,14 +262,18 @@ final class MacroViewController: NSViewController {
         comboRow.orientation = .horizontal
         comboRow.spacing = 10
         addComboButton.setContentHuggingPriority(.required, for: .horizontal)
-        let pauseRow = NSStackView(views: [pauseField, addPauseButton])
+        let pauseRow = NSStackView(views: [pauseModeSelector, pauseField, pauseMaxField, addPauseButton])
         pauseRow.orientation = .horizontal
         pauseRow.spacing = 10
         NSLayoutConstraint.activate([
-            pauseField.widthAnchor.constraint(equalToConstant: Layout.narrowFieldWidth)
+            pauseField.widthAnchor.constraint(equalToConstant: Layout.narrowFieldWidth),
+            pauseMaxField.widthAnchor.constraint(equalToConstant: Layout.narrowFieldWidth)
         ])
         addPauseButton.setContentHuggingPriority(.required, for: .horizontal)
-        let stack = NSStackView(views: [mouseRow, comboRow, pauseRow])
+        let captureRow = NSStackView(views: [cancelCaptureButton, NSView()])
+        captureRow.orientation = .horizontal
+        captureRow.spacing = 10
+        let stack = NSStackView(views: [mouseRow, comboRow, captureRow, pauseRow])
         stack.orientation = .vertical
         stack.spacing = 10
         return makeSection(title: "Add Actions", contentView: stack)
@@ -299,6 +347,7 @@ final class MacroViewController: NSViewController {
         } else {
             macroPicker.selectItem(at: -1)
         }
+        deleteButton.isEnabled = savedMacros.contains(where: { $0.id == currentDocument.id })
     }
 
     private func appendAction(_ action: MacroAction) {
@@ -333,8 +382,41 @@ final class MacroViewController: NSViewController {
         }
     }
 
-    @objc private func nameChanged() {
-        currentDocument.name = nameField.stringValue.isEmpty ? "Untitled Macro" : nameField.stringValue
+    private func updatePauseFields() {
+        let randomEnabled = pauseModeSelector.selectedSegment == 1
+        pauseMaxField.isEnabled = randomEnabled
+        pauseMaxField.alphaValue = randomEnabled ? 1 : 0.45
+    }
+
+    private func updateCaptureUI() {
+        let isArmed = armedCaptureRequest != nil
+        [addLeftClickButton, addRightClickButton, addComboButton].forEach {
+            $0.isEnabled = !isArmed
+            $0.alphaValue = isArmed ? 0.45 : 1
+        }
+        cancelCaptureButton.isHidden = !isArmed
+        cancelCaptureButton.isEnabled = isArmed
+        comboField.isEnabled = !isArmed
+        comboField.alphaValue = isArmed ? 0.45 : 1
+    }
+
+    private func requestCapture(_ request: MacroCaptureRequest) {
+        armedCaptureRequest = request
+        updateCaptureUI()
+        switch request {
+        case .leftClick:
+            statusLabel.stringValue = "Now click the left-click target to record."
+        case .rightClick:
+            statusLabel.stringValue = "Now click the right-click target to record."
+        case .keyCombo:
+            statusLabel.stringValue = "Now press the key combo you want to record."
+        }
+        onCaptureRequested?(request)
+    }
+
+    private func applyNameChange() {
+        let trimmed = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        currentDocument.name = trimmed.isEmpty ? "Untitled Macro" : trimmed
         onDocumentChanged?(currentDocument)
     }
 
@@ -348,23 +430,45 @@ final class MacroViewController: NSViewController {
     }
 
     @objc private func saveMacro() {
+        applyNameChange()
         onSaveRequested?()
     }
 
+    @objc private func deleteMacro() {
+        onDeleteRequested?()
+    }
+
     @objc private func addLeftClick() {
-        appendAction(.mouseClick(button: .left, point: mouseLocationProvider?() ?? .zero))
+        requestCapture(.leftClick)
     }
 
     @objc private func addRightClick() {
-        appendAction(.mouseClick(button: .right, point: mouseLocationProvider?() ?? .zero))
+        requestCapture(.rightClick)
     }
 
     @objc private func addCombo() {
-        appendAction(.keyCombo(pendingCombo))
+        requestCapture(.keyCombo)
     }
 
     @objc private func addPause() {
-        appendAction(.pause(milliseconds: max(pauseField.integerValue, 0)))
+        let minimum = max(pauseField.integerValue, 0)
+        if pauseModeSelector.selectedSegment == 1 {
+            let maximum = max(pauseMaxField.integerValue, 0)
+            appendAction(.randomPause(minMilliseconds: min(minimum, maximum), maxMilliseconds: max(minimum, maximum)))
+        } else {
+            appendAction(.pause(milliseconds: minimum))
+        }
+    }
+
+    @objc private func pauseModeChanged() {
+        updatePauseFields()
+    }
+
+    @objc private func cancelCapture() {
+        onCaptureCancelRequested?()
+        armedCaptureRequest = nil
+        updateCaptureUI()
+        statusLabel.stringValue = defaultStatusMessage
     }
 
     @objc private func toggleRecording() {
@@ -380,6 +484,11 @@ final class MacroViewController: NSViewController {
         label.font = .systemFont(ofSize: 11, weight: .medium)
         label.textColor = .secondaryLabelColor
         return label
+    }
+
+    func controlTextDidChange(_ obj: Notification) {
+        guard (obj.object as? NSTextField) === nameField else { return }
+        applyNameChange()
     }
 }
 

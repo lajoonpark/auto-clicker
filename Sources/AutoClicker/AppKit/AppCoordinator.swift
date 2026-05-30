@@ -101,8 +101,17 @@ final class AppCoordinator {
         macroViewController.onNewRequested = { [weak self] in
             self?.newMacro()
         }
+        macroViewController.onDeleteRequested = { [weak self] in
+            self?.deleteCurrentMacro()
+        }
         macroViewController.onSelectionChanged = { [weak self] id in
             self?.selectMacro(id: id)
+        }
+        macroViewController.onCaptureRequested = { [weak self] request in
+            self?.startSingleMacroCapture(request: request)
+        }
+        macroViewController.onCaptureCancelRequested = { [weak self] in
+            self?.inputRecorder.cancelSingleCapture()
         }
         macroViewController.onPlaybackToggle = { [weak self] loopMode, speed in
             guard self?.checkAndPromptForAccessibilityPermission() == true else { return }
@@ -160,13 +169,12 @@ final class AppCoordinator {
     }
 
     private func saveCurrentMacro() {
-        if currentMacro.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            currentMacro.name = "Untitled Macro"
-        }
+        let trimmed = currentMacro.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        currentMacro.name = trimmed.isEmpty ? "Untitled Macro" : trimmed
         try? macroStore.save(currentMacro)
         macros = (try? macroStore.loadAll()) ?? macros
-        if !macros.contains(where: { $0.id == currentMacro.id }) {
-            macros.append(currentMacro)
+        if let updated = macros.first(where: { $0.id == currentMacro.id }) {
+            currentMacro = updated
         }
         macroViewController.setMacros(macros)
         macroViewController.setDocument(currentMacro)
@@ -193,6 +201,50 @@ final class AppCoordinator {
             inputRecorder.stop()
         }
         macroViewController.setRecording(shouldRecord)
+    }
+
+    private func deleteCurrentMacro() {
+        guard let existing = macros.first(where: { $0.id == currentMacro.id }) else { return }
+        try? macroStore.delete(existing)
+        macros = (try? macroStore.loadAll()) ?? []
+        if let replacement = macros.first(where: { $0.id == currentMacro.id }) ?? macros.first {
+            currentMacro = replacement
+        } else {
+            currentMacro = MacroDocument(name: "Untitled Macro")
+        }
+        macroViewController.setMacros(macros)
+        macroViewController.setDocument(currentMacro)
+    }
+
+    private func startSingleMacroCapture(request: MacroCaptureRequest) {
+        guard checkAndPromptForAccessibilityPermission() else {
+            macroViewController.captureDidCancel(reason: "Accessibility permission is required to capture input.")
+            return
+        }
+
+        let target: InputRecorder.SingleCaptureTarget
+        switch request {
+        case .leftClick:
+            target = .leftClick
+        case .rightClick:
+            target = .rightClick
+        case .keyCombo:
+            target = .keyCombo
+        }
+
+        inputRecorder.startSingleCapture(target: target, onCaptured: { [weak self] action in
+            guard let self else { return }
+            self.macroViewController.captureDidSucceed(action)
+        }, onCancelled: { [weak self] reason in
+            let message: String
+            switch reason {
+            case .cancelled:
+                message = "Capture cancelled."
+            case .timedOut:
+                message = "Capture timed out."
+            }
+            self?.macroViewController.captureDidCancel(reason: message)
+        })
     }
 
     private func checkAndPromptForAccessibilityPermission() -> Bool {

@@ -96,6 +96,10 @@ public final class ActionRowView: NSView {
             iconLabel.stringValue = "⏱"
             titleLabel.stringValue = "Pause"
             subtitleLabel.stringValue = "Delay between actions"
+        case let .randomPause(minMilliseconds, maxMilliseconds):
+            iconLabel.stringValue = "⏱"
+            titleLabel.stringValue = "Random Pause"
+            subtitleLabel.stringValue = "\(minMilliseconds)-\(maxMilliseconds) ms"
         }
         iconLabel.setAccessibilityLabel(titleLabel.stringValue)
     }

@@ -19,9 +19,11 @@ public final class AutoClickerController: @unchecked Sendable {
     public func start(configuration: AutoClickConfiguration) {
         stop()
         let timer = DispatchSource.makeTimerSource(queue: queue)
-        let interval = max(configuration.intervalMilliseconds, 10)
         var remaining = repeatCount(from: configuration.repeatMode)
-        timer.schedule(deadline: .now(), repeating: .milliseconds(interval))
+        let scheduleNext: (Int) -> Void = { delay in
+            timer.schedule(deadline: .now() + .milliseconds(delay), repeating: .never)
+        }
+        scheduleNext(0)
         timer.setEventHandler { [weak self] in
             guard let self else { return }
             switch configuration.target {
@@ -34,8 +36,10 @@ public final class AutoClickerController: @unchecked Sendable {
                 remaining = value - 1
                 if remaining == 0 {
                     self.stop()
+                    return
                 }
             }
+            scheduleNext(Self.nextIntervalMilliseconds(for: configuration.interval))
         }
         lock.withLock { self.timer = timer }
         timer.resume()
@@ -59,6 +63,19 @@ public final class AutoClickerController: @unchecked Sendable {
         switch mode {
         case .untilStopped: nil
         case let .count(value): max(value, 1)
+        }
+    }
+
+    private static func nextIntervalMilliseconds(for interval: AutoClickInterval) -> Int {
+        switch interval {
+        case let .fixed(milliseconds):
+            return max(milliseconds, 10)
+        case let .randomRange(minMilliseconds, maxMilliseconds):
+            let minimum = max(minMilliseconds, 10)
+            let maximum = max(maxMilliseconds, 10)
+            let lower = min(minimum, maximum)
+            let upper = max(minimum, maximum)
+            return Int.random(in: lower ... upper)
         }
     }
 }

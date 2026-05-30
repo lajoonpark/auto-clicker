@@ -8,6 +8,7 @@ import Testing
     let document = MacroDocument(name: "Sample", actions: [
         .mouseClick(button: .left, point: .init(x: 40, y: 50)),
         .pause(milliseconds: 300),
+        .randomPause(minMilliseconds: 100, maxMilliseconds: 200),
         .keyCombo(.init(keyCodes: [8], modifiers: [.command]))
     ])
 
@@ -46,7 +47,7 @@ import Testing
     let simulator = MockSimulator()
     let controller = AutoClickerController(simulator: simulator)
 
-    controller.start(configuration: .init(target: .mouse(.left), intervalMilliseconds: 10, repeatMode: .count(1)))
+    controller.start(configuration: .init(target: .mouse(.left), interval: .fixed(milliseconds: 10), repeatMode: .count(1)))
     try await Task.sleep(for: .milliseconds(40))
 
     #expect(simulator.events == ["live-click:left"])
@@ -56,7 +57,7 @@ import Testing
     let simulator = MockSimulator()
     let controller = AutoClickerController(simulator: simulator)
 
-    controller.start(configuration: .init(target: .keyCombo(.init(keyCodes: [8], modifiers: [.command, .shift])), intervalMilliseconds: 10, repeatMode: .count(1)))
+    controller.start(configuration: .init(target: .keyCombo(.init(keyCodes: [8], modifiers: [.command, .shift])), interval: .fixed(milliseconds: 10), repeatMode: .count(1)))
     try await Task.sleep(for: .milliseconds(40))
 
     #expect(simulator.events == ["combo:command+shift:C"])
