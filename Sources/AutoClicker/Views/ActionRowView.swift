@@ -26,7 +26,7 @@ public final class ActionRowView: NSView {
         layer?.cornerRadius = 12
         layer?.borderWidth = 1
         layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.35).cgColor
-        layer?.backgroundColor = (NSColor.controlBackgroundColor.blended(withFraction: 0.2, of: .windowBackgroundColor) ?? .controlBackgroundColor).cgColor
+        layer?.backgroundColor = InterfaceStyling.cardBackground(blendFraction: 0.2)
         translatesAutoresizingMaskIntoConstraints = false
 
         let stack = NSStackView()

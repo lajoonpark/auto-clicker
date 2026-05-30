@@ -75,7 +75,7 @@ final class MacroViewController: NSViewController {
         nameField.drawsBackground = true
         nameField.wantsLayer = true
         nameField.layer?.cornerRadius = 10
-        if let cell = nameField.cell as? NSTextFieldCell {
+        InterfaceStyling.configureCell(for: nameField) { cell in
             cell.lineBreakMode = .byTruncatingTail
         }
         nameField.translatesAutoresizingMaskIntoConstraints = false
@@ -93,7 +93,7 @@ final class MacroViewController: NSViewController {
         statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.alignment = .center
-        if let cell = statusLabel.cell as? NSTextFieldCell {
+        InterfaceStyling.configureCell(for: statusLabel) { cell in
             cell.wraps = true
             cell.lineBreakMode = .byWordWrapping
         }
@@ -255,7 +255,7 @@ final class MacroViewController: NSViewController {
         container.layer?.cornerRadius = 16
         container.layer?.borderWidth = 1
         container.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.45).cgColor
-        container.layer?.backgroundColor = (NSColor.windowBackgroundColor.blended(withFraction: 0.4, of: .controlBackgroundColor) ?? .controlBackgroundColor).cgColor
+        container.layer?.backgroundColor = InterfaceStyling.cardBackground(blendFraction: 0.4)
         stack.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(stack)
         NSLayoutConstraint.activate([
