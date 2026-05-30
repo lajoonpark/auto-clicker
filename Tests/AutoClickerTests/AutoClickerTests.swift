@@ -102,8 +102,14 @@ private final class CountingSimulator: InputSimulation, @unchecked Sendable {
         lock.withLock { count }
     }
 
-    func currentPointerLocation() -> ScreenPoint { .zero }
-    func click(_ button: MouseButton, at point: ScreenPoint) { lock.withLock { count += 1 } }
+    func currentPointerLocation() -> ScreenPoint {
+        .zero
+    }
+
+    func click(_ button: MouseButton, at point: ScreenPoint) {
+        lock.withLock { count += 1 }
+    }
+
     func holdDown(_ button: MouseButton) {}
     func release(_ button: MouseButton) {}
     func pressKey(_ keyCode: UInt16, modifiers: [ModifierKey]) {}
