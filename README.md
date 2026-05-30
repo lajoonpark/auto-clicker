@@ -2,9 +2,9 @@
 
 AppKit-based macOS automation app scaffold with three focused workflows:
 
-- **Auto Clicker** for repeated left or right clicking at a configurable interval.
-- **Key Holder** for holding a keyboard combo or mouse button in toggle or while-pressed mode.
-- **Macro** for building, recording, saving, and replaying click/key/pause sequences.
+- **Auto Clicker** for repeatedly triggering a mouse click or keyboard combo at a configurable interval.
+- **Key Holder** for holding a custom keyboard combo or mouse button in toggle or while-pressed mode.
+- **Macro** for naming, building, recording, saving, and replaying click/key/pause sequences.
 
 ## Project layout
 

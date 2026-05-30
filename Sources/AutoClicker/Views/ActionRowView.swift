@@ -2,7 +2,9 @@
 import AppKit
 
 public final class ActionRowView: NSView {
+    private let iconLabel = NSTextField(labelWithString: "")
     private let titleLabel = NSTextField(labelWithString: "")
+    private let subtitleLabel = NSTextField(labelWithString: "")
     private let pauseField = NSTextField(string: "")
     private let deleteButton = NSButton(title: "×", target: nil, action: nil)
     private var onDelete: (() -> Void)?
@@ -21,8 +23,10 @@ public final class ActionRowView: NSView {
 
     private func configure(action: MacroAction) {
         wantsLayer = true
-        layer?.cornerRadius = 10
-        layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        layer?.cornerRadius = 12
+        layer?.borderWidth = 1
+        layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.35).cgColor
+        layer?.backgroundColor = InterfaceStyling.cardBackground(blendFraction: 0.2)
         translatesAutoresizingMaskIntoConstraints = false
 
         let stack = NSStackView()
@@ -32,9 +36,20 @@ public final class ActionRowView: NSView {
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
 
-        titleLabel.font = .systemFont(ofSize: 13, weight: .medium)
-        titleLabel.stringValue = KeyFormatter.label(for: action)
-        stack.addArrangedSubview(titleLabel)
+        iconLabel.font = .systemFont(ofSize: 16)
+        iconLabel.setContentHuggingPriority(.required, for: .horizontal)
+        titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        subtitleLabel.font = .systemFont(ofSize: 11, weight: .medium)
+        subtitleLabel.textColor = .secondaryLabelColor
+        let labels = NSStackView(views: [titleLabel, subtitleLabel])
+        labels.orientation = .vertical
+        labels.spacing = 2
+        labels.alignment = .leading
+
+        configureLabels(for: action)
+
+        stack.addArrangedSubview(iconLabel)
+        stack.addArrangedSubview(labels)
 
         switch action {
         case let .pause(milliseconds):
@@ -48,6 +63,8 @@ public final class ActionRowView: NSView {
         default:
             break
         }
+
+        stack.addArrangedSubview(NSView())
 
         deleteButton.target = self
         deleteButton.action = #selector(deleteRow)
@@ -63,6 +80,24 @@ public final class ActionRowView: NSView {
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -10),
             heightAnchor.constraint(greaterThanOrEqualToConstant: 46)
         ])
+    }
+
+    private func configureLabels(for action: MacroAction) {
+        switch action {
+        case let .mouseClick(button, point):
+            iconLabel.stringValue = "🖱️"
+            titleLabel.stringValue = button.displayName
+            subtitleLabel.stringValue = "Saved position · \(Int(point.x)), \(Int(point.y))"
+        case let .keyCombo(combo):
+            iconLabel.stringValue = "⌨️"
+            titleLabel.stringValue = "Keyboard Combo"
+            subtitleLabel.stringValue = KeyFormatter.label(for: combo)
+        case .pause:
+            iconLabel.stringValue = "⏱"
+            titleLabel.stringValue = "Pause"
+            subtitleLabel.stringValue = "Delay between actions"
+        }
+        iconLabel.setAccessibilityLabel(titleLabel.stringValue)
     }
 
     @objc private func deleteRow() {

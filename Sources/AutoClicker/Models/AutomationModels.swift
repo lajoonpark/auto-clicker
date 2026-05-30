@@ -142,6 +142,11 @@ public enum KeyHolderMode: String, Codable, CaseIterable, Sendable {
     case whilePressed
 }
 
+public enum RepeatTarget: Equatable, Sendable {
+    case mouse(MouseButton)
+    case keyCombo(KeyCombo)
+}
+
 public enum HoldTarget: Codable, Equatable, Sendable {
     case mouse(MouseButton)
     case keyCombo(KeyCombo)
@@ -218,12 +223,12 @@ public enum AutoClickRepeatMode: Equatable, Sendable {
 }
 
 public struct AutoClickConfiguration: Equatable, Sendable {
-    public var button: MouseButton
+    public var target: RepeatTarget
     public var intervalMilliseconds: Int
     public var repeatMode: AutoClickRepeatMode
 
-    public init(button: MouseButton, intervalMilliseconds: Int, repeatMode: AutoClickRepeatMode) {
-        self.button = button
+    public init(target: RepeatTarget, intervalMilliseconds: Int, repeatMode: AutoClickRepeatMode) {
+        self.target = target
         self.intervalMilliseconds = intervalMilliseconds
         self.repeatMode = repeatMode
     }

@@ -2,8 +2,6 @@
 import AppKit
 
 public final class KeyCaptureField: NSTextField {
-    private static let returnKeyCode: UInt16 = 36
-
     public enum CaptureStyle {
         case hotkey
         case combo(maximumKeys: Int)
@@ -55,8 +53,10 @@ public final class KeyCaptureField: NSTextField {
 
     public override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
-        if resigned, stringValue == "Recording…" {
+        if resigned && stringValue == "Recording…" {
             stringValue = placeholderText
+        }
+        if resigned {
             layer?.borderColor = NSColor.separatorColor.cgColor
         }
         return resigned
@@ -82,13 +82,6 @@ public final class KeyCaptureField: NSTextField {
             onHotkeyCaptured?(shortcut)
             window?.makeFirstResponder(nil)
         case let .combo(maximumKeys):
-            if event.keyCode == Self.returnKeyCode {
-                if !capturedKeys.isEmpty {
-                    applyCapturedCombo()
-                }
-                window?.makeFirstResponder(nil)
-                return
-            }
             let didAddKey: Bool
             if !capturedKeys.contains(event.keyCode), capturedKeys.count < maximumKeys {
                 capturedKeys.append(event.keyCode)

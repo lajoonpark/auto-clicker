@@ -7,14 +7,13 @@ enum InputSimulatorPlatform {
         NSEvent.mouseLocation
     }
 
+    static func click(_ button: MouseButton) {
+        let location = NSEvent.mouseLocation
+        postClick(button, at: location)
+    }
+
     static func click(_ button: MouseButton, at point: ScreenPoint) {
-        let source = eventSource()
-        guard let down = CGEvent(mouseEventSource: source, mouseType: mouseDownType(for: button), mouseCursorPosition: cgPoint(for: point), mouseButton: cgButton(for: button)),
-              let up = CGEvent(mouseEventSource: source, mouseType: mouseUpType(for: button), mouseCursorPosition: cgPoint(for: point), mouseButton: cgButton(for: button)) else {
-            return
-        }
-        down.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
+        postClick(button, at: cgPoint(for: point))
     }
 
     static func holdMouse(_ button: MouseButton) {
@@ -98,6 +97,16 @@ enum InputSimulatorPlatform {
         let source = CGEventSource(stateID: .hidSystemState)
         source?.localEventsSuppressionInterval = 0
         return source
+    }
+
+    private static func postClick(_ button: MouseButton, at location: CGPoint) {
+        let source = eventSource()
+        guard let down = CGEvent(mouseEventSource: source, mouseType: mouseDownType(for: button), mouseCursorPosition: location, mouseButton: cgButton(for: button)),
+              let up = CGEvent(mouseEventSource: source, mouseType: mouseUpType(for: button), mouseCursorPosition: location, mouseButton: cgButton(for: button)) else {
+            return
+        }
+        down.post(tap: .cghidEventTap)
+        up.post(tap: .cghidEventTap)
     }
 
     private static func modifierKeyCode(for modifier: ModifierKey) -> CGKeyCode {

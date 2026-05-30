@@ -3,24 +3,32 @@ import AppKit
 
 @MainActor
 final class AutoClickerViewController: NSViewController {
+    private static let defaultIntervalMilliseconds = 100
+
     var onToggleRequested: ((AutoClickConfiguration) -> Void)?
     var onHotkeyChanged: ((HotkeyShortcut) -> Void)?
 
-    private let buttonSelector = NSSegmentedControl(labels: ["Left Click", "Right Click"], trackingMode: .selectOne, target: nil, action: nil)
-    private let intervalSlider = NSSlider(value: 100, minValue: 10, maxValue: 10_000, target: nil, action: nil)
-    private let intervalField = NSTextField(string: "100")
+    private let targetSelector = NSSegmentedControl(labels: ["Left Click", "Right Click", "Keyboard Combo"], trackingMode: .selectOne, target: nil, action: nil)
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: InputConstants.maximumComboKeys), placeholder: "Click to record key combo")
+    private let intervalSlider = NSSlider(value: Self.defaultIntervalMilliseconds, minValue: 10, maxValue: 10_000, target: nil, action: nil)
+    private let intervalField = NSTextField(string: String(Self.defaultIntervalMilliseconds))
     private let repeatSelector = NSSegmentedControl(labels: ["Until Stopped", "Fixed Count"], trackingMode: .selectOne, target: nil, action: nil)
     private let repeatCountField = NSTextField(string: "100")
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
     private let startButton = ModernButton(title: "Start", target: nil, action: nil)
-    private let statusLabel = NSTextField(labelWithString: "Ready · 10.0 CPS")
+    private let statusLabel = NSTextField(labelWithString: String(format: "Ready · %.1f actions/s", Self.actionsPerSecond(interval: defaultIntervalMilliseconds)))
+    private var currentCombo = InputConstants.defaultCombo
 
     override func loadView() {
         view = NSView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        buttonSelector.selectedSegment = 0
+        targetSelector.selectedSegment = 0
         repeatSelector.selectedSegment = 0
         repeatCountField.isEnabled = false
+        targetSelector.target = self
+        targetSelector.action = #selector(targetChanged)
+        comboField.onComboCaptured = { [weak self] combo in self?.currentCombo = combo }
+        comboField.setCombo(currentCombo)
         intervalSlider.target = self
         intervalSlider.action = #selector(sliderChanged)
         intervalField.target = self
@@ -34,6 +42,7 @@ final class AutoClickerViewController: NSViewController {
         statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
         layout()
+        targetChanged()
     }
 
     func setHotkey(_ hotkey: HotkeyShortcut) {
@@ -43,15 +52,23 @@ final class AutoClickerViewController: NSViewController {
     func setRunning(_ isRunning: Bool) {
         startButton.title = isRunning ? "Stop" : "Start"
         startButton.isProminent = !isRunning
-        let cps = 1000.0 / Double(max(Int(intervalSlider.doubleValue), 10))
-        statusLabel.stringValue = isRunning ? String(format: "Running · %.1f CPS", cps) : String(format: "Ready · %.1f CPS", cps)
+        let rate = Self.actionsPerSecond(interval: max(Int(intervalSlider.doubleValue), 10))
+        statusLabel.stringValue = isRunning ? String(format: "Running · %.1f actions/s", rate) : String(format: "Ready · %.1f actions/s", rate)
     }
 
     func currentConfiguration() -> AutoClickConfiguration {
-        let button: MouseButton = buttonSelector.selectedSegment == 0 ? .left : .right
+        let target: RepeatTarget
+        switch targetSelector.selectedSegment {
+        case 1:
+            target = .mouse(.right)
+        case 2:
+            target = .keyCombo(currentCombo)
+        default:
+            target = .mouse(.left)
+        }
         let interval = max(Int(intervalField.integerValue), 10)
         let mode: AutoClickRepeatMode = repeatSelector.selectedSegment == 0 ? .untilStopped : .count(max(repeatCountField.integerValue, 1))
-        return AutoClickConfiguration(button: button, intervalMilliseconds: interval, repeatMode: mode)
+        return AutoClickConfiguration(target: target, intervalMilliseconds: interval, repeatMode: mode)
     }
 
     private func layout() {
@@ -62,7 +79,7 @@ final class AutoClickerViewController: NSViewController {
         view.addSubview(content)
 
         [
-            makeSection(title: "Click Button", contentView: buttonSelector),
+            makeTargetSection(),
             makeIntervalSection(),
             makeRepeatSection(),
             makeSection(title: "Start / Stop Hotkey", contentView: hotkeyField),
@@ -78,11 +95,18 @@ final class AutoClickerViewController: NSViewController {
         startButton.heightAnchor.constraint(equalToConstant: 38).isActive = true
     }
 
+    private func makeTargetSection() -> NSView {
+        let stack = NSStackView(views: [targetSelector, comboField])
+        stack.orientation = .vertical
+        stack.spacing = 8
+        return makeSection(title: "Repeated Action", contentView: stack)
+    }
+
     private func makeIntervalSection() -> NSView {
         let container = NSStackView()
         container.orientation = .vertical
         container.spacing = 8
-        let label = NSTextField(labelWithString: "Click Interval (ms)")
+        let label = NSTextField(labelWithString: "Action Interval (ms)")
         label.font = .systemFont(ofSize: 12, weight: .semibold)
         let row = NSStackView(views: [intervalSlider, intervalField])
         row.orientation = .horizontal
@@ -151,8 +175,18 @@ final class AutoClickerViewController: NSViewController {
         repeatCountField.isEnabled = repeatSelector.selectedSegment == 1
     }
 
+    @objc private func targetChanged() {
+        let comboEnabled = targetSelector.selectedSegment == 2
+        comboField.isEnabled = comboEnabled
+        comboField.alphaValue = comboEnabled ? 1 : 0.45
+    }
+
     @objc private func toggleRequested() {
         onToggleRequested?(currentConfiguration())
+    }
+
+    private static func actionsPerSecond(interval: Int) -> Double {
+        1000.0 / Double(interval)
     }
 }
 #endif

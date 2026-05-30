@@ -24,8 +24,12 @@ public final class AutoClickerController: @unchecked Sendable {
         timer.schedule(deadline: .now(), repeating: .milliseconds(interval))
         timer.setEventHandler { [weak self] in
             guard let self else { return }
-            let location = self.simulator.currentPointerLocation()
-            self.simulator.click(configuration.button, at: location)
+            switch configuration.target {
+            case let .mouse(button):
+                self.simulator.click(button)
+            case let .keyCombo(combo):
+                self.simulator.pressCombo(combo)
+            }
             if let value = remaining {
                 remaining = value - 1
                 if remaining == 0 {

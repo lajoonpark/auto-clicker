@@ -3,6 +3,11 @@ import AppKit
 
 @MainActor
 final class MacroViewController: NSViewController {
+    private enum Layout {
+        static let narrowFieldWidth: CGFloat = 88
+        static let loopFieldWidth: CGFloat = 72
+    }
+
     var onDocumentChanged: ((MacroDocument) -> Void)?
     var onSaveRequested: (() -> Void)?
     var onNewRequested: (() -> Void)?
@@ -19,8 +24,8 @@ final class MacroViewController: NSViewController {
     private let actionStack = NSStackView()
     private let addLeftClickButton = ModernButton(title: "+ Left Click", target: nil, action: nil)
     private let addRightClickButton = ModernButton(title: "+ Right Click", target: nil, action: nil)
-    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 4), placeholder: "Record combo then Return")
-    private let addComboButton = ModernButton(title: "+ Add Combo", target: nil, action: nil)
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: InputConstants.maximumComboKeys), placeholder: "Click to record key combo")
+    private let addComboButton = ModernButton(title: "+ Add Keys", target: nil, action: nil)
     private let pauseField = NSTextField(string: "250")
     private let addPauseButton = ModernButton(title: "+ Add Pause", target: nil, action: nil)
     private let loopField = NSTextField(string: "1")
@@ -33,7 +38,7 @@ final class MacroViewController: NSViewController {
 
     private var currentDocument = MacroDocument(name: "Untitled Macro")
     private var savedMacros: [MacroDocument] = []
-    private var pendingCombo = KeyCombo(keyCodes: [8], modifiers: [.command])
+    private var pendingCombo = InputConstants.defaultCombo
     private var isRecording = false
 
     override func loadView() {
@@ -63,10 +68,35 @@ final class MacroViewController: NSViewController {
         playButton.action = #selector(togglePlayback)
         recordButton.isProminent = false
         playButton.isProminent = true
+        nameField.placeholderString = "Name this macro"
+        nameField.font = .systemFont(ofSize: 15, weight: .semibold)
+        nameField.isBordered = false
+        nameField.backgroundColor = .textBackgroundColor
+        nameField.drawsBackground = true
+        nameField.wantsLayer = true
+        nameField.layer?.cornerRadius = 10
+        InterfaceStyling.configureCell(for: nameField) { cell in
+            cell.lineBreakMode = .byTruncatingTail
+        }
+        nameField.translatesAutoresizingMaskIntoConstraints = false
+        nameField.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        macroPicker.controlSize = .large
+        macroPicker.translatesAutoresizingMaskIntoConstraints = false
+        pauseField.placeholderString = "ms"
+        pauseField.alignment = .right
+        pauseField.translatesAutoresizingMaskIntoConstraints = false
+        loopField.placeholderString = "Loops"
+        loopField.alignment = .right
+        loopField.translatesAutoresizingMaskIntoConstraints = false
         speedSelector.addItems(withTitles: ["0.25×", "0.5×", "1×", "2×", "4×"])
         speedSelector.selectItem(withTitle: "1×")
         statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
+        statusLabel.alignment = .center
+        InterfaceStyling.configureCell(for: statusLabel) { cell in
+            cell.wraps = true
+            cell.lineBreakMode = .byWordWrapping
+        }
         buildLayout()
     }
 
@@ -110,8 +140,9 @@ final class MacroViewController: NSViewController {
         let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
         actionStack.orientation = .vertical
-        actionStack.spacing = 8
+        actionStack.spacing = 12
         let documentView = FlippedContentView()
         documentView.translatesAutoresizingMaskIntoConstraints = false
         actionStack.translatesAutoresizingMaskIntoConstraints = false
@@ -124,11 +155,12 @@ final class MacroViewController: NSViewController {
             actionStack.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
             actionStack.bottomAnchor.constraint(equalTo: documentView.bottomAnchor)
         ])
-        scrollView.heightAnchor.constraint(equalToConstant: 250).isActive = true
+        scrollView.heightAnchor.constraint(equalToConstant: 300).isActive = true
 
         let content = NSStackView()
         content.orientation = .vertical
-        content.spacing = 14
+        content.spacing = 18
+        content.edgeInsets = NSEdgeInsets(top: 4, left: 0, bottom: 20, right: 0)
         content.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(content)
 
@@ -148,14 +180,26 @@ final class MacroViewController: NSViewController {
     }
 
     private func makeHeaderSection() -> NSView {
-        let top = NSStackView(views: [nameField, newButton, saveButton])
+        let nameLabel = sectionMetaLabel("Macro Name")
+        let savedLabel = sectionMetaLabel("Saved Macros")
+        let buttons = NSStackView(views: [newButton, saveButton])
+        buttons.orientation = .horizontal
+        buttons.spacing = 8
+        buttons.setHuggingPriority(.required, for: .horizontal)
+
+        let top = NSStackView(views: [nameField, buttons])
         top.orientation = .horizontal
         top.spacing = 10
-        let bottom = NSStackView(views: [NSTextField(labelWithString: "Saved Macros"), macroPicker])
+        top.alignment = .centerY
+        nameField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let bottom = NSStackView(views: [savedLabel, macroPicker])
         bottom.orientation = .horizontal
         bottom.spacing = 10
         bottom.alignment = .centerY
-        let stack = NSStackView(views: [top, bottom])
+        savedLabel.setContentHuggingPriority(.required, for: .horizontal)
+
+        let stack = NSStackView(views: [nameLabel, top, bottom])
         stack.orientation = .vertical
         stack.spacing = 10
         return makeSection(title: "Current Macro", contentView: stack)
@@ -169,13 +213,18 @@ final class MacroViewController: NSViewController {
         let mouseRow = NSStackView(views: [addLeftClickButton, addRightClickButton])
         mouseRow.orientation = .horizontal
         mouseRow.spacing = 10
+        mouseRow.distribution = .fillEqually
         let comboRow = NSStackView(views: [comboField, addComboButton])
         comboRow.orientation = .horizontal
         comboRow.spacing = 10
+        addComboButton.setContentHuggingPriority(.required, for: .horizontal)
         let pauseRow = NSStackView(views: [pauseField, addPauseButton])
         pauseRow.orientation = .horizontal
         pauseRow.spacing = 10
-        pauseField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        NSLayoutConstraint.activate([
+            pauseField.widthAnchor.constraint(equalToConstant: Layout.narrowFieldWidth)
+        ])
+        addPauseButton.setContentHuggingPriority(.required, for: .horizontal)
         let stack = NSStackView(views: [mouseRow, comboRow, pauseRow])
         stack.orientation = .vertical
         stack.spacing = 10
@@ -186,10 +235,13 @@ final class MacroViewController: NSViewController {
         let loopRow = NSStackView(views: [loopField, untilStoppedButton, speedSelector])
         loopRow.orientation = .horizontal
         loopRow.spacing = 10
-        loopField.widthAnchor.constraint(equalToConstant: 60).isActive = true
+        NSLayoutConstraint.activate([
+            loopField.widthAnchor.constraint(equalToConstant: Layout.loopFieldWidth)
+        ])
         let buttons = NSStackView(views: [recordButton, playButton])
         buttons.orientation = .horizontal
         buttons.spacing = 10
+        buttons.distribution = .fillEqually
         let stack = NSStackView(views: [loopRow, buttons])
         stack.orientation = .vertical
         stack.spacing = 10
@@ -198,21 +250,23 @@ final class MacroViewController: NSViewController {
 
     private func makeSection(title: String, contentView: NSView) -> NSView {
         let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         let stack = NSStackView(views: [label, contentView])
         stack.orientation = .vertical
         stack.spacing = 8
         let container = NSView()
         container.wantsLayer = true
-        container.layer?.cornerRadius = 12
-        container.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        container.layer?.cornerRadius = 16
+        container.layer?.borderWidth = 1
+        container.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.45).cgColor
+        container.layer?.backgroundColor = InterfaceStyling.cardBackground(blendFraction: 0.4)
         stack.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12)
+            stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 14),
+            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 14),
+            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -14),
+            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14)
         ])
         return container
     }
@@ -225,6 +279,7 @@ final class MacroViewController: NSViewController {
         if currentDocument.actions.isEmpty {
             let label = NSTextField(labelWithString: "No actions yet. Add clicks, key combos, pauses, or record one live.")
             label.textColor = .secondaryLabelColor
+            label.alignment = .center
             actionStack.addArrangedSubview(label)
             return
         }
@@ -318,6 +373,13 @@ final class MacroViewController: NSViewController {
 
     @objc private func togglePlayback() {
         onPlaybackToggle?(currentLoopMode(), currentSpeed())
+    }
+
+    private func sectionMetaLabel(_ title: String) -> NSTextField {
+        let label = NSTextField(labelWithString: title)
+        label.font = .systemFont(ofSize: 11, weight: .medium)
+        label.textColor = .secondaryLabelColor
+        return label
     }
 }
 

@@ -9,12 +9,12 @@ final class KeyHolderViewController: NSViewController {
     var onHotkeyChanged: ((HotkeyShortcut) -> Void)?
 
     private let targetSelector = NSSegmentedControl(labels: ["Keyboard Combo", "Left Mouse", "Right Mouse"], trackingMode: .selectOne, target: nil, action: nil)
-    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 4), placeholder: "Click, then press keys")
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: InputConstants.maximumComboKeys), placeholder: "Click to record key combo")
     private let modeSelector = NSSegmentedControl(labels: ["Toggle", "While Pressed"], trackingMode: .selectOne, target: nil, action: nil)
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
     private let startButton = ModernButton(title: "Start Holding", target: nil, action: nil)
     private let statusLabel = NSTextField(labelWithString: "Not holding")
-    private var currentCombo = KeyCombo(keyCodes: [8], modifiers: [.command])
+    private var currentCombo = InputConstants.defaultCombo
 
     override func loadView() {
         view = NSView()
