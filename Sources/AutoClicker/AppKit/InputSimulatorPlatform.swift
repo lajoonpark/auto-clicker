@@ -4,12 +4,11 @@ import CoreGraphics
 
 enum InputSimulatorPlatform {
     static func currentMouseLocation() -> CGPoint {
-        NSEvent.mouseLocation
+        currentCGMouseLocation() ?? .zero
     }
 
     static func click(_ button: MouseButton) {
-        let location = NSEvent.mouseLocation
-        postClick(button, at: location)
+        performClickAtCurrentCGMouseLocation(button)
     }
 
     static func click(_ button: MouseButton, at point: ScreenPoint) {
@@ -97,6 +96,40 @@ enum InputSimulatorPlatform {
         let source = CGEventSource(stateID: .hidSystemState)
         source?.localEventsSuppressionInterval = 0
         return source
+    }
+
+    private static func currentCGMouseLocation() -> CGPoint? {
+        CGEvent(source: nil)?.location
+    }
+
+    private static func performClickAtCurrentCGMouseLocation(_ button: MouseButton) {
+        guard let location = currentCGMouseLocation() else {
+            print("Auto-click failed: could not read CG mouse location")
+            return
+        }
+
+        let source = eventSource()
+        guard let mouseDown = CGEvent(
+            mouseEventSource: source,
+            mouseType: mouseDownType(for: button),
+            mouseCursorPosition: location,
+            mouseButton: cgButton(for: button)
+        ),
+        let mouseUp = CGEvent(
+            mouseEventSource: source,
+            mouseType: mouseUpType(for: button),
+            mouseCursorPosition: location,
+            mouseButton: cgButton(for: button)
+        ) else {
+            print("Auto-click failed: could not create mouse events")
+            return
+        }
+
+        mouseDown.setIntegerValueField(.mouseEventClickState, value: 1)
+        mouseUp.setIntegerValueField(.mouseEventClickState, value: 1)
+        mouseDown.post(tap: .cghidEventTap)
+        usleep(30_000)
+        mouseUp.post(tap: .cghidEventTap)
     }
 
     private static func postClick(_ button: MouseButton, at location: CGPoint) {
