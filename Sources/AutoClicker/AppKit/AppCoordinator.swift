@@ -220,11 +220,6 @@ final class AppCoordinator {
     }
 
     private func startSingleMacroCapture(request: MacroCaptureRequest) {
-        guard checkAndPromptForAccessibilityPermission() else {
-            macroViewController.captureDidCancel(reason: "Accessibility permission is required to capture input.")
-            return
-        }
-
         let target: InputRecorder.SingleCaptureTarget
         switch request {
         case .leftClick:
@@ -233,6 +228,13 @@ final class AppCoordinator {
             target = .rightClick
         case .keyCombo:
             target = .keyCombo
+        }
+
+        if target != .keyCombo {
+            guard checkAndPromptForAccessibilityPermission() else {
+                macroViewController.captureDidCancel(reason: "Accessibility permission is required to capture input.")
+                return
+            }
         }
 
         inputRecorder.startSingleCapture(target: target, onCaptured: { [weak self] action in

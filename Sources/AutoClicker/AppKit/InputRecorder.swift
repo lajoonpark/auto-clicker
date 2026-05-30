@@ -21,12 +21,14 @@ public final class InputRecorder {
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    private var localKeyMonitor: Any?
     private var handler: ((MacroAction) -> Void)?
     private var singleCaptureHandler: ((MacroAction) -> Void)?
     private var singleCaptureCancelled: ((SingleCaptureCancellationReason) -> Void)?
     private var singleCaptureToken: UUID?
     private var mode: Mode = .recording
     private var lastTimestamp: UInt64?
+    private var latestModifierFlags: CGEventFlags = []
     private var timeoutWorkItem: DispatchWorkItem?
     public private(set) var isRecording = false
 
@@ -45,6 +47,7 @@ public final class InputRecorder {
         lastTimestamp = nil
 
         let eventMask = (UInt64(1) << CGEventType.keyDown.rawValue)
+            | (UInt64(1) << CGEventType.flagsChanged.rawValue)
             | (UInt64(1) << CGEventType.leftMouseDown.rawValue)
             | (UInt64(1) << CGEventType.rightMouseDown.rawValue)
         installTap(eventMask: eventMask)
@@ -72,10 +75,14 @@ public final class InputRecorder {
         case .rightClick:
             eventMask = 1 << CGEventType.rightMouseDown.rawValue
         case .keyCombo:
-            eventMask = 1 << CGEventType.keyDown.rawValue
+            eventMask = (1 << CGEventType.keyDown.rawValue)
+                | (1 << CGEventType.flagsChanged.rawValue)
         }
         installTap(eventMask: eventMask)
-        isRecording = eventTap != nil
+        if target == .keyCombo {
+            installLocalKeyMonitor()
+        }
+        isRecording = eventTap != nil || localKeyMonitor != nil
         guard isRecording else {
             singleCaptureCancelled?(.cancelled)
             singleCaptureHandler = nil
@@ -107,13 +114,18 @@ public final class InputRecorder {
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         }
+        if let localKeyMonitor {
+            NSEvent.removeMonitor(localKeyMonitor)
+        }
         eventTap = nil
         runLoopSource = nil
+        localKeyMonitor = nil
         handler = nil
         singleCaptureHandler = nil
         singleCaptureCancelled = nil
         singleCaptureToken = nil
         mode = .recording
+        latestModifierFlags = []
         isRecording = false
     }
 
@@ -126,13 +138,15 @@ public final class InputRecorder {
         case .recording:
             appendPauseIfNeeded(for: event.timestamp)
             switch type {
+            case .flagsChanged:
+                latestModifierFlags = event.flags
             case .leftMouseDown:
                 handler?(.mouseClick(button: .left, point: .init(x: event.location.x, y: event.location.y)))
             case .rightMouseDown:
                 handler?(.mouseClick(button: .right, point: .init(x: event.location.x, y: event.location.y)))
             case .keyDown:
                 let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-                let modifiers = modifiers(from: event.flags)
+                let modifiers = modifiers(from: latestModifierFlags.union(event.flags))
                 if isModifierOnly(keyCode) { return Unmanaged.passUnretained(event) }
                 handler?(.keyCombo(.init(keyCodes: [keyCode], modifiers: modifiers)))
             default:
@@ -183,11 +197,38 @@ public final class InputRecorder {
             guard type == .rightMouseDown else { return nil }
             return .mouseClick(button: .right, point: .init(x: event.location.x, y: event.location.y))
         case .keyCombo:
+            if type == .flagsChanged {
+                latestModifierFlags = event.flags
+                return nil
+            }
             guard type == .keyDown else { return nil }
             let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
             if isModifierOnly(keyCode) { return nil }
-            let modifiers = modifiers(from: event.flags)
+            let modifiers = modifiers(from: latestModifierFlags.union(event.flags))
             return .keyCombo(.init(keyCodes: [keyCode], modifiers: modifiers))
+        }
+    }
+
+    private func installLocalKeyMonitor() {
+        guard localKeyMonitor == nil else { return }
+        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged, .keyDown]) { [weak self] event in
+            guard let self else { return event }
+            guard case .single(.keyCombo) = self.mode else { return event }
+            switch event.type {
+            case .flagsChanged:
+                self.latestModifierFlags = self.cgFlags(from: event.modifierFlags)
+                return event
+            case .keyDown:
+                let keyCode = event.keyCode
+                guard !self.isModifierOnly(keyCode) else { return event }
+                let modifiers = self.modifiers(from: self.latestModifierFlags.union(self.cgFlags(from: event.modifierFlags)))
+                let capture = self.singleCaptureHandler
+                self.stop()
+                capture?(.keyCombo(.init(keyCodes: [keyCode], modifiers: modifiers)))
+                return nil
+            default:
+                return event
+            }
         }
     }
 
@@ -207,6 +248,16 @@ public final class InputRecorder {
         if flags.contains(.maskControl) { modifiers.append(.control) }
         if flags.contains(.maskShift) { modifiers.append(.shift) }
         return modifiers.sorted { $0.rawValue < $1.rawValue }
+    }
+
+    private func cgFlags(from flags: NSEvent.ModifierFlags) -> CGEventFlags {
+        var cgFlags: CGEventFlags = []
+        if flags.contains(.command) { cgFlags.insert(.maskCommand) }
+        if flags.contains(.option) { cgFlags.insert(.maskAlternate) }
+        if flags.contains(.control) { cgFlags.insert(.maskControl) }
+        if flags.contains(.shift) { cgFlags.insert(.maskShift) }
+        if flags.contains(.capsLock) { cgFlags.insert(.maskAlphaShift) }
+        return cgFlags
     }
 
     private func isModifierOnly(_ keyCode: UInt16) -> Bool {
