@@ -24,6 +24,7 @@ public final class InputRecorder {
     private var handler: ((MacroAction) -> Void)?
     private var singleCaptureHandler: ((MacroAction) -> Void)?
     private var singleCaptureCancelled: ((SingleCaptureCancellationReason) -> Void)?
+    private var singleCaptureToken: UUID?
     private var mode: Mode = .recording
     private var lastTimestamp: UInt64?
     private var timeoutWorkItem: DispatchWorkItem?
@@ -58,6 +59,8 @@ public final class InputRecorder {
     ) {
         stop()
         mode = .single(target)
+        let token = UUID()
+        singleCaptureToken = token
         singleCaptureHandler = onCaptured
         singleCaptureCancelled = onCancelled
         handler = nil
@@ -80,7 +83,9 @@ public final class InputRecorder {
             return
         }
         let timeoutWorkItem = DispatchWorkItem { [weak self] in
-            self?.cancelSingleCapture(reason: .timedOut)
+            guard let self else { return }
+            guard case .single = self.mode, self.singleCaptureToken == token else { return }
+            self.cancelSingleCapture(reason: .timedOut)
         }
         self.timeoutWorkItem = timeoutWorkItem
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: timeoutWorkItem)
@@ -107,6 +112,7 @@ public final class InputRecorder {
         handler = nil
         singleCaptureHandler = nil
         singleCaptureCancelled = nil
+        singleCaptureToken = nil
         mode = .recording
         isRecording = false
     }

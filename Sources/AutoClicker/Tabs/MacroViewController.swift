@@ -61,8 +61,6 @@ final class MacroViewController: NSViewController, NSTextFieldDelegate {
         comboField.onComboCaptured = { [weak self] combo in self?.pendingCombo = combo }
         comboField.setCombo(pendingCombo)
         hotkeyField.onHotkeyCaptured = { [weak self] shortcut in self?.onHotkeyChanged?(shortcut) }
-        nameField.target = self
-        nameField.action = #selector(nameChanged)
         macroPicker.target = self
         macroPicker.action = #selector(selectionChanged)
         newButton.target = self
@@ -420,10 +418,6 @@ final class MacroViewController: NSViewController, NSTextFieldDelegate {
         let trimmed = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         currentDocument.name = trimmed.isEmpty ? "Untitled Macro" : trimmed
         onDocumentChanged?(currentDocument)
-    }
-
-    @objc private func nameChanged() {
-        applyNameChange()
     }
 
     @objc private func selectionChanged() {

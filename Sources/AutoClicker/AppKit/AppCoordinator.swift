@@ -192,50 +192,6 @@ final class AppCoordinator {
                 macroViewController.setRecording(false)
                 return
             }
-
-            private func deleteCurrentMacro() {
-                guard let existing = macros.first(where: { $0.id == currentMacro.id }) else { return }
-                try? macroStore.delete(existing)
-                macros = (try? macroStore.loadAll()) ?? []
-                if let replacement = macros.first(where: { $0.id == currentMacro.id }) ?? macros.first {
-                    currentMacro = replacement
-                } else {
-                    currentMacro = MacroDocument(name: "Untitled Macro")
-                }
-                macroViewController.setMacros(macros)
-                macroViewController.setDocument(currentMacro)
-            }
-
-            private func startSingleMacroCapture(request: MacroCaptureRequest) {
-                guard checkAndPromptForAccessibilityPermission() else {
-                    macroViewController.captureDidCancel(reason: "Accessibility permission is required to capture input.")
-                    return
-                }
-
-                let target: InputRecorder.SingleCaptureTarget
-                switch request {
-                case .leftClick:
-                    target = .leftClick
-                case .rightClick:
-                    target = .rightClick
-                case .keyCombo:
-                    target = .keyCombo
-                }
-
-                inputRecorder.startSingleCapture(target: target, onCaptured: { [weak self] action in
-                    guard let self else { return }
-                    self.macroViewController.captureDidSucceed(action)
-                }, onCancelled: { [weak self] reason in
-                    let message: String
-                    switch reason {
-                    case .cancelled:
-                        message = "Capture cancelled."
-                    case .timedOut:
-                        message = "Capture timed out."
-                    }
-                    self?.macroViewController.captureDidCancel(reason: message)
-                })
-            }
             inputRecorder.start { [weak self] action in
                 guard let self else { return }
                 self.currentMacro.actions.append(action)
@@ -245,6 +201,50 @@ final class AppCoordinator {
             inputRecorder.stop()
         }
         macroViewController.setRecording(shouldRecord)
+    }
+
+    private func deleteCurrentMacro() {
+        guard let existing = macros.first(where: { $0.id == currentMacro.id }) else { return }
+        try? macroStore.delete(existing)
+        macros = (try? macroStore.loadAll()) ?? []
+        if let replacement = macros.first(where: { $0.id == currentMacro.id }) ?? macros.first {
+            currentMacro = replacement
+        } else {
+            currentMacro = MacroDocument(name: "Untitled Macro")
+        }
+        macroViewController.setMacros(macros)
+        macroViewController.setDocument(currentMacro)
+    }
+
+    private func startSingleMacroCapture(request: MacroCaptureRequest) {
+        guard checkAndPromptForAccessibilityPermission() else {
+            macroViewController.captureDidCancel(reason: "Accessibility permission is required to capture input.")
+            return
+        }
+
+        let target: InputRecorder.SingleCaptureTarget
+        switch request {
+        case .leftClick:
+            target = .leftClick
+        case .rightClick:
+            target = .rightClick
+        case .keyCombo:
+            target = .keyCombo
+        }
+
+        inputRecorder.startSingleCapture(target: target, onCaptured: { [weak self] action in
+            guard let self else { return }
+            self.macroViewController.captureDidSucceed(action)
+        }, onCancelled: { [weak self] reason in
+            let message: String
+            switch reason {
+            case .cancelled:
+                message = "Capture cancelled."
+            case .timedOut:
+                message = "Capture timed out."
+            }
+            self?.macroViewController.captureDidCancel(reason: message)
+        })
     }
 
     private func checkAndPromptForAccessibilityPermission() -> Bool {

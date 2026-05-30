@@ -49,7 +49,6 @@ public final class KeyCaptureField: NSTextField {
 
     public override func mouseDown(with event: NSEvent) {
         _ = window?.makeFirstResponder(self)
-        beginCapture()
     }
 
     public override func resignFirstResponder() -> Bool {
