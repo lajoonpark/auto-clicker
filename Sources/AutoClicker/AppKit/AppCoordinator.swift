@@ -49,12 +49,12 @@ final class AppCoordinator {
     }
 
     func startHotkeysIfPossible() {
+        hotkeyManager.onEmergencyStop = { [weak self] in
+            self?.emergencyStop()
+        }
         guard AccessibilityPermissionManager.isTrusted() else {
             stopHotkeys()
             return
-        }
-        hotkeyManager.onEmergencyStop = { [weak self] in
-            self?.emergencyStop()
         }
         hotkeyManager.start(shortcuts: [
             .autoClicker: settings.autoClickerHotkey,

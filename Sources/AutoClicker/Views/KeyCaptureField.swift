@@ -70,7 +70,8 @@ public final class KeyCaptureField: NSTextField {
         return true
     }
 
-    public override func keyDown(with event: NSEvent) {        if event.keyCode == 53 {
+    public override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 {
             window?.makeFirstResponder(nil)
             stringValue = placeholderText
             return
