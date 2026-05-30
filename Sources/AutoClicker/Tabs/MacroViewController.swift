@@ -70,7 +70,9 @@ final class MacroViewController: NSViewController {
         nameField.drawsBackground = true
         nameField.wantsLayer = true
         nameField.layer?.cornerRadius = 10
-        nameField.lineBreakMode = .byTruncatingTail
+        if let cell = nameField.cell as? NSTextFieldCell {
+            cell.lineBreakMode = .byTruncatingTail
+        }
         nameField.translatesAutoresizingMaskIntoConstraints = false
         nameField.heightAnchor.constraint(equalToConstant: 36).isActive = true
         macroPicker.controlSize = .large
@@ -86,8 +88,10 @@ final class MacroViewController: NSViewController {
         statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.alignment = .center
-        statusLabel.lineBreakMode = .byWordWrapping
-        statusLabel.maximumNumberOfLines = 2
+        if let cell = statusLabel.cell as? NSTextFieldCell {
+            cell.wraps = true
+            cell.lineBreakMode = .byWordWrapping
+        }
         buildLayout()
     }
 

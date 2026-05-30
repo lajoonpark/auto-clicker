@@ -14,7 +14,7 @@ final class AutoClickerViewController: NSViewController {
     private let repeatCountField = NSTextField(string: "100")
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
     private let startButton = ModernButton(title: "Start", target: nil, action: nil)
-    private let statusLabel = NSTextField(labelWithString: "Ready · 10.0 CPS")
+    private let statusLabel = NSTextField(labelWithString: "Ready · 10.0 actions/s")
     private var currentCombo = KeyCombo(keyCodes: [8], modifiers: [.command])
 
     override func loadView() {
@@ -50,8 +50,8 @@ final class AutoClickerViewController: NSViewController {
     func setRunning(_ isRunning: Bool) {
         startButton.title = isRunning ? "Stop" : "Start"
         startButton.isProminent = !isRunning
-        let cps = 1000.0 / Double(max(Int(intervalSlider.doubleValue), 10))
-        statusLabel.stringValue = isRunning ? String(format: "Running · %.1f CPS", cps) : String(format: "Ready · %.1f CPS", cps)
+        let actionsPerSecond = 1000.0 / Double(max(Int(intervalSlider.doubleValue), 10))
+        statusLabel.stringValue = isRunning ? String(format: "Running · %.1f actions/s", actionsPerSecond) : String(format: "Ready · %.1f actions/s", actionsPerSecond)
     }
 
     func currentConfiguration() -> AutoClickConfiguration {
@@ -104,7 +104,7 @@ final class AutoClickerViewController: NSViewController {
         let container = NSStackView()
         container.orientation = .vertical
         container.spacing = 8
-        let label = NSTextField(labelWithString: "Click Interval (ms)")
+        let label = NSTextField(labelWithString: "Action Interval (ms)")
         label.font = .systemFont(ofSize: 12, weight: .semibold)
         let row = NSStackView(views: [intervalSlider, intervalField])
         row.orientation = .horizontal
