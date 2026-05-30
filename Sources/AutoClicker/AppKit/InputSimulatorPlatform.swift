@@ -7,7 +7,11 @@ enum InputSimulatorPlatform {
     private static let clickUpDelayMilliseconds: useconds_t = 30
 
     static func currentMouseLocation() -> CGPoint {
-        currentCGMouseLocation() ?? .zero
+        guard let location = currentCGMouseLocation() else {
+            NSLog("Auto-click failed: could not read CG mouse location")
+            return .zero
+        }
+        return location
     }
 
     static func click(_ button: MouseButton) {
@@ -19,7 +23,10 @@ enum InputSimulatorPlatform {
     }
 
     static func holdMouse(_ button: MouseButton) {
-        let point = currentMouseLocation()
+        guard let point = currentCGMouseLocation() else {
+            NSLog("Auto-click failed: could not read CG mouse location")
+            return
+        }
         guard let event = CGEvent(mouseEventSource: eventSource(), mouseType: mouseDownType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
             return
         }
@@ -27,7 +34,10 @@ enum InputSimulatorPlatform {
     }
 
     static func releaseMouse(_ button: MouseButton) {
-        let point = currentMouseLocation()
+        guard let point = currentCGMouseLocation() else {
+            NSLog("Auto-click failed: could not read CG mouse location")
+            return
+        }
         guard let event = CGEvent(mouseEventSource: eventSource(), mouseType: mouseUpType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
             return
         }
