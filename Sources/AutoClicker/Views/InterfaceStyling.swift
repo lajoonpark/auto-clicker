@@ -1,7 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 
-enum InterfaceStyling {
+internal enum InterfaceStyling {
     static func cardBackground(blendFraction: CGFloat) -> CGColor {
         (NSColor.windowBackgroundColor.blended(withFraction: blendFraction, of: .controlBackgroundColor) ?? .controlBackgroundColor).cgColor
     }

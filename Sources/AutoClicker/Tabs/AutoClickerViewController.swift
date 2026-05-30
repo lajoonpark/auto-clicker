@@ -7,7 +7,7 @@ final class AutoClickerViewController: NSViewController {
     var onHotkeyChanged: ((HotkeyShortcut) -> Void)?
 
     private let targetSelector = NSSegmentedControl(labels: ["Left Click", "Right Click", "Keyboard Combo"], trackingMode: .selectOne, target: nil, action: nil)
-    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 8), placeholder: "Click and press any keys")
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 8), placeholder: "Click to record key combo")
     private let intervalSlider = NSSlider(value: 100, minValue: 10, maxValue: 10_000, target: nil, action: nil)
     private let intervalField = NSTextField(string: "100")
     private let repeatSelector = NSSegmentedControl(labels: ["Until Stopped", "Fixed Count"], trackingMode: .selectOne, target: nil, action: nil)

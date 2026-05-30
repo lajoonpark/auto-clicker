@@ -97,6 +97,7 @@ public final class ActionRowView: NSView {
             titleLabel.stringValue = "Pause"
             subtitleLabel.stringValue = "Delay between actions"
         }
+        iconLabel.setAccessibilityLabel(titleLabel.stringValue)
     }
 
     @objc private func deleteRow() {
