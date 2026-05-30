@@ -49,6 +49,9 @@ final class AppCoordinator {
     }
 
     func startHotkeysIfPossible() {
+        hotkeyManager.onEmergencyStop = { [weak self] in
+            self?.emergencyStop()
+        }
         guard AccessibilityPermissionManager.isTrusted() else {
             stopHotkeys()
             return
@@ -258,6 +261,14 @@ final class AppCoordinator {
 
     private func stopHotkeys() {
         hotkeyManager.stop()
+    }
+
+    private func emergencyStop() {
+        autoClickerController.stop()
+        keyHolderController.stop()
+        macroRunner.stop()
+        inputRecorder.stop()
+        NSApp.terminate(nil)
     }
 }
 #endif

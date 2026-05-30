@@ -62,6 +62,14 @@ public final class KeyCaptureField: NSTextField {
         return resigned
     }
 
+    public override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard window?.firstResponder === self, !isModifier(event.keyCode) else {
+            return super.performKeyEquivalent(with: event)
+        }
+        keyDown(with: event)
+        return true
+    }
+
     public override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 {
             window?.makeFirstResponder(nil)
