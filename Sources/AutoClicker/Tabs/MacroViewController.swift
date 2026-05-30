@@ -3,6 +3,11 @@ import AppKit
 
 @MainActor
 final class MacroViewController: NSViewController {
+    private enum Layout {
+        static let narrowFieldWidth: CGFloat = 88
+        static let loopFieldWidth: CGFloat = 72
+    }
+
     var onDocumentChanged: ((MacroDocument) -> Void)?
     var onSaveRequested: (() -> Void)?
     var onNewRequested: (() -> Void)?
@@ -33,7 +38,7 @@ final class MacroViewController: NSViewController {
 
     private var currentDocument = MacroDocument(name: "Untitled Macro")
     private var savedMacros: [MacroDocument] = []
-    private var pendingCombo = KeyCombo(keyCodes: [8], modifiers: [.command])
+    private var pendingCombo = InputConstants.defaultCombo
     private var isRecording = false
 
     override func loadView() {
@@ -216,7 +221,7 @@ final class MacroViewController: NSViewController {
         let pauseRow = NSStackView(views: [pauseField, addPauseButton])
         pauseRow.orientation = .horizontal
         pauseRow.spacing = 10
-        pauseField.widthAnchor.constraint(equalToConstant: 88).isActive = true
+        pauseField.widthAnchor.constraint(equalToConstant: Layout.narrowFieldWidth).isActive = true
         addPauseButton.setContentHuggingPriority(.required, for: .horizontal)
         let stack = NSStackView(views: [mouseRow, comboRow, pauseRow])
         stack.orientation = .vertical
@@ -228,7 +233,7 @@ final class MacroViewController: NSViewController {
         let loopRow = NSStackView(views: [loopField, untilStoppedButton, speedSelector])
         loopRow.orientation = .horizontal
         loopRow.spacing = 10
-        loopField.widthAnchor.constraint(equalToConstant: 72).isActive = true
+        loopField.widthAnchor.constraint(equalToConstant: Layout.loopFieldWidth).isActive = true
         let buttons = NSStackView(views: [recordButton, playButton])
         buttons.orientation = .horizontal
         buttons.spacing = 10

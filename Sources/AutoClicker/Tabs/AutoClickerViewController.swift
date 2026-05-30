@@ -15,7 +15,7 @@ final class AutoClickerViewController: NSViewController {
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
     private let startButton = ModernButton(title: "Start", target: nil, action: nil)
     private let statusLabel = NSTextField(labelWithString: "Ready · 10.0 actions/s")
-    private var currentCombo = KeyCombo(keyCodes: [8], modifiers: [.command])
+    private var currentCombo = InputConstants.defaultCombo
 
     override func loadView() {
         view = NSView()

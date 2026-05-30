@@ -85,7 +85,7 @@ public final class ActionRowView: NSView {
     private func configureLabels(for action: MacroAction) {
         switch action {
         case let .mouseClick(button, point):
-            iconLabel.stringValue = button == .left ? "🖱️" : "🖱︎"
+            iconLabel.stringValue = "🖱️"
             titleLabel.stringValue = button.displayName
             subtitleLabel.stringValue = "Saved position · \(Int(point.x)), \(Int(point.y))"
         case let .keyCombo(combo):
