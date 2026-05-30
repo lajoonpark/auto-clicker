@@ -24,7 +24,7 @@ final class MacroViewController: NSViewController {
     private let actionStack = NSStackView()
     private let addLeftClickButton = ModernButton(title: "+ Left Click", target: nil, action: nil)
     private let addRightClickButton = ModernButton(title: "+ Right Click", target: nil, action: nil)
-    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 8), placeholder: "Click to record key combo")
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: InputConstants.maximumComboKeys), placeholder: "Click to record key combo")
     private let addComboButton = ModernButton(title: "+ Add Keys", target: nil, action: nil)
     private let pauseField = NSTextField(string: "250")
     private let addPauseButton = ModernButton(title: "+ Add Pause", target: nil, action: nil)

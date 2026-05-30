@@ -3,18 +3,20 @@ import AppKit
 
 @MainActor
 final class AutoClickerViewController: NSViewController {
+    private static let defaultIntervalMilliseconds = 100
+
     var onToggleRequested: ((AutoClickConfiguration) -> Void)?
     var onHotkeyChanged: ((HotkeyShortcut) -> Void)?
 
     private let targetSelector = NSSegmentedControl(labels: ["Left Click", "Right Click", "Keyboard Combo"], trackingMode: .selectOne, target: nil, action: nil)
-    private let comboField = KeyCaptureField(style: .combo(maximumKeys: 8), placeholder: "Click to record key combo")
-    private let intervalSlider = NSSlider(value: 100, minValue: 10, maxValue: 10_000, target: nil, action: nil)
-    private let intervalField = NSTextField(string: "100")
+    private let comboField = KeyCaptureField(style: .combo(maximumKeys: InputConstants.maximumComboKeys), placeholder: "Click to record key combo")
+    private let intervalSlider = NSSlider(value: Self.defaultIntervalMilliseconds, minValue: 10, maxValue: 10_000, target: nil, action: nil)
+    private let intervalField = NSTextField(string: String(Self.defaultIntervalMilliseconds))
     private let repeatSelector = NSSegmentedControl(labels: ["Until Stopped", "Fixed Count"], trackingMode: .selectOne, target: nil, action: nil)
     private let repeatCountField = NSTextField(string: "100")
     private let hotkeyField = KeyCaptureField(style: .hotkey, placeholder: "Click and press a hotkey")
     private let startButton = ModernButton(title: "Start", target: nil, action: nil)
-    private let statusLabel = NSTextField(labelWithString: "Ready · 10.0 actions/s")
+    private let statusLabel = NSTextField(labelWithString: String(format: "Ready · %.1f actions/s", 1000.0 / Double(Self.defaultIntervalMilliseconds)))
     private var currentCombo = InputConstants.defaultCombo
 
     override func loadView() {
