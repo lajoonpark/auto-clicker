@@ -221,7 +221,9 @@ final class MacroViewController: NSViewController {
         let pauseRow = NSStackView(views: [pauseField, addPauseButton])
         pauseRow.orientation = .horizontal
         pauseRow.spacing = 10
-        pauseField.widthAnchor.constraint(equalToConstant: Layout.narrowFieldWidth).isActive = true
+        NSLayoutConstraint.activate([
+            pauseField.widthAnchor.constraint(equalToConstant: Layout.narrowFieldWidth)
+        ])
         addPauseButton.setContentHuggingPriority(.required, for: .horizontal)
         let stack = NSStackView(views: [mouseRow, comboRow, pauseRow])
         stack.orientation = .vertical
@@ -233,7 +235,9 @@ final class MacroViewController: NSViewController {
         let loopRow = NSStackView(views: [loopField, untilStoppedButton, speedSelector])
         loopRow.orientation = .horizontal
         loopRow.spacing = 10
-        loopField.widthAnchor.constraint(equalToConstant: Layout.loopFieldWidth).isActive = true
+        NSLayoutConstraint.activate([
+            loopField.widthAnchor.constraint(equalToConstant: Layout.loopFieldWidth)
+        ])
         let buttons = NSStackView(views: [recordButton, playButton])
         buttons.orientation = .horizontal
         buttons.spacing = 10

@@ -53,10 +53,10 @@ public final class KeyCaptureField: NSTextField {
 
     public override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
+        if resigned && stringValue == "Recording…" {
+            stringValue = placeholderText
+        }
         if resigned {
-            if stringValue == "Recording…" {
-                stringValue = placeholderText
-            }
             layer?.borderColor = NSColor.separatorColor.cgColor
         }
         return resigned
