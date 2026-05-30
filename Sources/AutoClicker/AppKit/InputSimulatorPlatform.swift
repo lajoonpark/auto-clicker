@@ -3,12 +3,12 @@ import AppKit
 import CoreGraphics
 
 enum InputSimulatorPlatform {
-    // Short 30ms pause so targets reliably observe a full mouse-down/mouse-up click sequence.
+    // Short 30ms (30,000 microseconds) pause so targets reliably observe a full mouse-down/mouse-up click sequence.
     private static let clickSequenceDelayMicroseconds: useconds_t = 30_000
 
     static func currentMouseLocation() -> CGPoint {
         guard let location = currentCGMouseLocation() else {
-            NSLog("Auto-click failed: could not read CG mouse location")
+            NSLog("Auto-click warning: could not read CG mouse location, returning zero point")
             return .zero
         }
         return location
