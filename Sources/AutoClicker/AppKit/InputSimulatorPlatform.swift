@@ -3,6 +3,7 @@ import AppKit
 import CoreGraphics
 
 enum InputSimulatorPlatform {
+    // Keep a short pause so targets reliably observe a full mouse-down/mouse-up click sequence.
     private static let clickUpDelayMicroseconds: useconds_t = 30_000
 
     static func currentMouseLocation() -> CGPoint {
