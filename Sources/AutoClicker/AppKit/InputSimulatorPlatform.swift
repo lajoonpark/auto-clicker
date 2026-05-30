@@ -28,6 +28,7 @@ enum InputSimulatorPlatform {
             return
         }
         guard let event = CGEvent(mouseEventSource: eventSource(), mouseType: mouseDownType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
+            NSLog("Auto-click failed: could not create mouse down event")
             return
         }
         event.post(tap: .cghidEventTap)
@@ -39,6 +40,7 @@ enum InputSimulatorPlatform {
             return
         }
         guard let event = CGEvent(mouseEventSource: eventSource(), mouseType: mouseUpType(for: button), mouseCursorPosition: point, mouseButton: cgButton(for: button)) else {
+            NSLog("Auto-click failed: could not create mouse up event")
             return
         }
         event.post(tap: .cghidEventTap)
